@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ネット上のセールを横断比較。今日、本当に安いものだけを紹介する『今日の売り出し』。">
+  <meta name="theme-color" content="#111318">
+  <title>今日の売り出し｜今日、本当に安いものだけ。</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ad-disclosure">当サイトはアフィリエイト広告を利用しています。</div>
+
+  <header class="site-header">
+    <a class="brand" href="./">
+      <span class="brand-mark">売</span>
+      <span><strong>今日の売り出し</strong><small>今日、本当に安いものだけ。</small></span>
+    </a>
+    <nav>
+      <a href="#today">今日の特価</a>
+      <a href="#how">選び方</a>
+      <a href="about.html">運営情報</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">AI DEAL CURATION</div>
+        <h1>「50%OFF」に<br>だまされない。</h1>
+        <p>Amazon・楽天・Yahoo!・家電量販店などを横断し、表示価格だけでなく、送料・ポイント・クーポン・他店相場まで見て「今日、本当に安いもの」を選びます。</p>
+        <div class="hero-actions">
+          <a class="primary" href="#today">今日の特価を見る</a>
+          <span id="updated" class="updated">更新時刻を確認中…</span>
+        </div>
+      </div>
+      <div class="hero-card">
+        <span class="hot-label">TODAY'S SIGNAL</span>
+        <div class="signal-score"><b>95</b><span>/100</span></div>
+        <strong>神セール</strong>
+        <p>他店相場より大幅に安く、価格差が明確な商品だけを上位表示。</p>
+      </div>
+    </section>
+
+    <section class="trust-row">
+      <div><b>横断比較</b><span>複数ショップ</span></div>
+      <div><b>実質価格</b><span>送料・ポイント考慮</span></div>
+      <div><b>広告優先なし</b><span>最安店を正直に表示</span></div>
+      <div><b>毎日更新</b><span>価格変動を追跡</span></div>
+    </section>
+
+    <section id="today" class="section">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">TODAY</span>
+          <h2>本日の神セール</h2>
+        </div>
+        <div class="filter-wrap">
+          <button class="filter active" data-filter="all">すべて</button>
+          <button class="filter" data-filter="家電">家電</button>
+          <button class="filter" data-filter="ホビー">ホビー</button>
+          <button class="filter" data-filter="美容">美容</button>
+          <button class="filter" data-filter="食品">食品</button>
+        </div>
+      </div>
+
+      <div id="dealGrid" class="deal-grid" aria-live="polite"></div>
+
+      <div class="method-note">
+        <strong>掲載基準</strong>
+        <p>単なる「割引率」ではなく、他店価格・実質価格・相場との差・販売店の信頼性などをもとに掲載します。価格は変動します。購入前に販売ページで最新価格をご確認ください。</p>
+      </div>
+    </section>
+
+    <section id="how" class="section how">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">HOW IT WORKS</span>
+          <h2>安さを3段階で判定</h2>
+        </div>
+      </div>
+      <div class="steps">
+        <article><span>01</span><h3>ネットを横断</h3><p>ECモールや量販店から候補商品を集めます。</p></article>
+        <article><span>02</span><h3>実質価格を比較</h3><p>価格・送料・クーポン・ポイント・他店相場を比較します。</p></article>
+        <article><span>03</span><h3>「買い」だけ掲載</h3><p>安く見えるだけの商品を除外し、スコア上位を掲載します。</p></article>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div>
+        <span class="eyebrow">MISSION</span>
+        <h2>ネットの特売、<br>AIが全部見てきます。</h2>
+      </div>
+      <p>将来的には「値下がり通知」「お気に入りカテゴリ」「朝の特価便」も追加予定です。</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-brand">今日の売り出し</div>
+    <div class="footer-links">
+      <a href="about.html">運営者情報</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+    </div>
+    <p>当サイトはアフィリエイト広告を利用しています。掲載価格・在庫・ポイント等は変更される場合があります。最終的な条件は各販売サイトでご確認ください。</p>
+    <small>© 2026 今日の売り出し</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
