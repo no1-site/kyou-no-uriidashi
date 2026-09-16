@@ -6,33 +6,33 @@ $configPath = Join-Path $configDirectory "rakuten-credentials.xml"
 function Read-ClipboardValue {
     param([string]$Label)
 
-    Read-Host "$Label を楽天の画面でコピーしてから Enter"
+    Read-Host "Copy $Label from Rakuten, then press Enter"
     $value = (Get-Clipboard -Raw).Trim()
 
     if ([string]::IsNullOrWhiteSpace($value)) {
-        throw "$Label をクリップボードから読み取れませんでした。"
+        throw "Could not read $Label from the clipboard."
     }
 
     return $value
 }
 
 Write-Host ""
-Write-Host "楽天APIの情報を、このWindowsユーザーだけが復号できる形式で保存します。"
+Write-Host "Rakuten API credentials will be encrypted for this Windows user."
 Write-Host ""
 
-$applicationId = Read-ClipboardValue "アプリケーションID"
+$applicationId = Read-ClipboardValue "Application ID"
 if ($applicationId -notmatch "^[0-9A-Fa-f-]{36}$") {
-    throw "アプリケーションIDの形式を確認してください。"
+    throw "Check the Application ID format."
 }
 
 $accessKey = Read-ClipboardValue "Access key"
 if ($accessKey -notmatch "^pk_[!-~]+$") {
-    throw "Access keyに空白や改行が含まれているか、形式が正しくありません。"
+    throw "The Access key contains spaces or unsupported characters."
 }
 
-$affiliateId = Read-ClipboardValue "アフィリエイトID"
+$affiliateId = Read-ClipboardValue "Affiliate ID"
 if ($affiliateId -notmatch "^[!-~]+$") {
-    throw "アフィリエイトIDに空白や改行が含まれています。"
+    throw "The Affiliate ID contains spaces or unsupported characters."
 }
 
 New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
@@ -49,8 +49,7 @@ $affiliateId = $null
 [GC]::Collect()
 
 Write-Host ""
-Write-Host "保存できました。楽天APIの値は画面やリポジトリには表示されません。"
-Write-Host "続けて自動更新の動作確認を開始します。"
+Write-Host "Credentials saved. Starting a test update."
 Write-Host ""
 
 & (Join-Path $PSScriptRoot "update-site.ps1")
@@ -59,4 +58,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "動作確認が完了しました。"
+Write-Host "Test update completed."
