@@ -60,7 +60,8 @@ for (const search of searches) {
 
   const response = await fetch(url, {
     headers: {
-      accessKey
+      accessKey,
+      Referer: "https://no1-site.github.io/kyou-no-uriidashi/"
     }
   });
 
