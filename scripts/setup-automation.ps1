@@ -6,7 +6,7 @@ $configPath = Join-Path $configDirectory "rakuten-credentials.xml"
 function Read-ClipboardValue {
     param([string]$Label)
 
-    Read-Host "Copy $Label from Rakuten, then press Enter"
+    Read-Host "Copy $Label from Rakuten, then press Enter" | Out-Null
     $value = (Get-Clipboard -Raw).Trim()
 
     if ([string]::IsNullOrWhiteSpace($value)) {
