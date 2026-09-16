@@ -1,0 +1,70 @@
+name: 楽天商品取得
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-products:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: サイトのファイルを取得
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 楽天の商品を取得
+        env:
+          RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
+          RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+        run: node scripts/fetch-rakuten.mjs
+
+      - name: 商品データを確認
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+
+          const products = JSON.parse(
+            await readFile("products.json", "utf8")
+          );
+
+          if (!Array.isArray(products) || products.length === 0) {
+            throw new Error("商品データが空です。");
+          }
+
+          for (const product of products) {
+            if (
+              typeof product.name !== "string" ||
+              !product.name.trim() ||
+              !Number.isFinite(product.price) ||
+              product.price <= 0
+            ) {
+              throw new Error("商品名または価格に不正なデータがあります。");
+            }
+
+            const url = new URL(product.best_url);
+            if (url.protocol !== "https:") {
+              throw new Error("商品URLを確認してください。");
+            }
+          }
+
+          console.log(`確認成功：${products.length}件`);
+          NODE
+
+      - name: 確認用の商品データを保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: rakuten-products
+          path: products.json
+          retention-days: 1
+          if-no-files-found: error
