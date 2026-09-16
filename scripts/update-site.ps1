@@ -49,13 +49,13 @@ try {
 
     Write-UpdateLog "Starting update."
 
-    & $gitExecutable -C $repositoryPath pull --ff-only 2>&1 |
+    & $gitExecutable -C $repositoryPath pull --ff-only |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
         throw "Could not pull the latest files from GitHub."
     }
 
-    & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\fetch-rakuten.mjs") 2>&1 |
+    & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\fetch-rakuten.mjs") |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
         throw "Could not fetch Rakuten products."
@@ -74,13 +74,13 @@ try {
         $japanNow = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $japanTimeZone)
         $commitMessage = "Update Rakuten products " + $japanNow.ToString("yyyy-MM-dd HH:mm")
 
-        & $gitExecutable -C $repositoryPath commit -m $commitMessage 2>&1 |
+        & $gitExecutable -C $repositoryPath commit -m $commitMessage |
             Tee-Object -FilePath $logPath -Append
         if ($LASTEXITCODE -ne 0) {
             throw "Could not commit product data."
         }
 
-        & $gitExecutable -C $repositoryPath push origin HEAD 2>&1 |
+        & $gitExecutable -C $repositoryPath push origin HEAD |
             Tee-Object -FilePath $logPath -Append
         if ($LASTEXITCODE -ne 0) {
             throw "Could not push product data to GitHub."
