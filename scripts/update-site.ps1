@@ -30,7 +30,7 @@ $exitCode = 0
 
 try {
     if (-not (Test-Path $configPath)) {
-        throw "楽天APIの保存情報がありません。setup-automation.ps1を先に実行してください。"
+        throw "Saved Rakuten credentials were not found. Run setup-automation.ps1 first."
     }
 
     $gitSearchPath = Join-Path $env:LOCALAPPDATA "GitHubDesktop\app-*\resources\app\git\cmd\git.exe"
@@ -39,7 +39,7 @@ try {
         Select-Object -First 1 -ExpandProperty FullName
 
     if (-not $gitExecutable) {
-        throw "GitHub Desktopに含まれるGitが見つかりません。"
+        throw "Git included with GitHub Desktop was not found."
     }
 
     $settings = Import-Clixml -Path $configPath
@@ -47,18 +47,18 @@ try {
     $env:RAKUTEN_ACCESS_KEY = Reveal-SecureValue $settings.AccessKey
     $env:RAKUTEN_AFFILIATE_ID = Reveal-SecureValue $settings.AffiliateId
 
-    Write-UpdateLog "更新を開始します。"
+    Write-UpdateLog "Starting update."
 
     & $gitExecutable -C $repositoryPath pull --ff-only 2>&1 |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
-        throw "GitHubから最新版を取得できませんでした。"
+        throw "Could not pull the latest files from GitHub."
     }
 
     & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\fetch-rakuten.mjs") 2>&1 |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
-        throw "楽天の商品取得に失敗しました。"
+        throw "Could not fetch Rakuten products."
     }
 
     & $gitExecutable -C $repositoryPath config user.name "no1-site"
@@ -67,31 +67,31 @@ try {
 
     & $gitExecutable -C $repositoryPath diff --cached --quiet
     if ($LASTEXITCODE -eq 0) {
-        Write-UpdateLog "商品データに変更はありませんでした。"
+        Write-UpdateLog "No product data changes."
     }
     else {
         $japanTimeZone = [TimeZoneInfo]::FindSystemTimeZoneById("Tokyo Standard Time")
         $japanNow = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $japanTimeZone)
-        $commitMessage = "楽天商品を自動更新 " + $japanNow.ToString("yyyy-MM-dd HH:mm")
+        $commitMessage = "Update Rakuten products " + $japanNow.ToString("yyyy-MM-dd HH:mm")
 
         & $gitExecutable -C $repositoryPath commit -m $commitMessage 2>&1 |
             Tee-Object -FilePath $logPath -Append
         if ($LASTEXITCODE -ne 0) {
-            throw "商品データを記録できませんでした。"
+            throw "Could not commit product data."
         }
 
         & $gitExecutable -C $repositoryPath push origin HEAD 2>&1 |
             Tee-Object -FilePath $logPath -Append
         if ($LASTEXITCODE -ne 0) {
-            throw "商品データをGitHubへ送信できませんでした。"
+            throw "Could not push product data to GitHub."
         }
 
-        Write-UpdateLog "商品データをサイトへ送信しました。"
+        Write-UpdateLog "Product data was sent to the site."
     }
 }
 catch {
     $exitCode = 1
-    Write-UpdateLog ("エラー: " + $_.Exception.Message)
+    Write-UpdateLog ("ERROR: " + $_.Exception.Message)
 }
 finally {
     Remove-Item Env:RAKUTEN_APPLICATION_ID -ErrorAction SilentlyContinue
@@ -101,8 +101,8 @@ finally {
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName
         if ([string]::IsNullOrWhiteSpace($activeUser)) {
-            Write-UpdateLog "ログイン中の利用者がいないため、2分後に電源を切ります。"
-            Start-Process shutdown.exe -ArgumentList @("/s", "/t", "120", "/c", "今日の売り出しの自動更新が完了しました。") -WindowStyle Hidden
+            Write-UpdateLog "No interactive user is logged in. Shutting down in two minutes."
+            Start-Process shutdown.exe -ArgumentList @("/s", "/t", "120", "/c", "Automatic site update completed.") -WindowStyle Hidden
         }
     }
 }
