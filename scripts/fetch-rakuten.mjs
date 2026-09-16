@@ -59,11 +59,11 @@ for (const search of searches) {
   }
 
   const response = await fetch(url, {
-    headers: {
-      accessKey,
-      Referer: "https://no1-site.github.io/kyou-no-uriidashi/"
-    }
-  });
+  headers: {
+    accessKey,
+    Referer: "https://no1-site.github.io/kyou-no-uriidashi/"
+  }
+});
 
   if (!response.ok) {
     const message = await response.text();
