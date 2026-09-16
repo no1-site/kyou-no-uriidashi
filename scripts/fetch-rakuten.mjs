@@ -58,12 +58,12 @@ for (const search of searches) {
     url.searchParams.set("affiliateId", affiliateId);
   }
 
-  const response = await fetch(url, {
-  headers: {
-    accessKey,
-    Referer: "https://no1-site.github.io/kyou-no-uriidashi/"
-  }
-});
+const response = await fetch(url, {
+    headers: {
+      accessKey,
+      referer: "https://no1-site.github.io/kyou-no-uriidashi/"
+    }
+  });
 
   if (!response.ok) {
     const message = await response.text();
