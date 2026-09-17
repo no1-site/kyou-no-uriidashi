@@ -1,31 +1,23 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildComparison, productIdentity, positiveNumber, getItemImage, httpsURL } from "./lib/rakuten-comparison.mjs";
 
 const applicationId = process.env.RAKUTEN_APPLICATION_ID;
 const accessKey = process.env.RAKUTEN_ACCESS_KEY;
 const affiliateId = process.env.RAKUTEN_AFFILIATE_ID;
+if (!applicationId || !accessKey) throw new Error("Rakuten Application ID / Access key is missing.");
 
-if (!applicationId || !accessKey) {
-  throw new Error("楽天APIのApplication IDまたはAccess keyが設定されていません。");
-}
-
-const scriptDirectory = dirname(fileURLToPath(import.meta.url));
-const repositoryPath = resolve(scriptDirectory, "..");
-const outputPath = process.env.RAKUTEN_OUTPUT_PATH ||
-  resolve(repositoryPath, "products.json");
-const historyPath = process.env.RAKUTEN_HISTORY_PATH ||
-  resolve(repositoryPath, ".local", "price-history.json");
-const requestInterval = Number(
-  process.env.RAKUTEN_REQUEST_INTERVAL_MS ?? 1200
-);
-
-const productEndpoint =
-  "https://openapi.rakuten.co.jp/ichibaproduct/api/Product/Search/20250801";
-const itemEndpoint =
-  "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701";
-const siteURL = "https://no1-site.github.io/kyou-no-uriidashi/";
-
+const repositoryPath = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const outputPath = process.env.RAKUTEN_OUTPUT_PATH || resolve(repositoryPath, "products.json");
+const historyPath = process.env.RAKUTEN_HISTORY_PATH || resolve(repositoryPath, ".local", "price-history.json");
+const requestInterval = Number(process.env.RAKUTEN_REQUEST_INTERVAL_MS ?? 1200);
+const checkedAt = new Date().toISOString();
+const japanDate = new Date(Date.parse(checkedAt) + 9 * 3600000).toISOString().slice(0, 10);
+const endpoints = {
+  product: "https://openapi.rakuten.co.jp/ichibaproduct/api/Product/Search/20250801",
+  item: "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701"
+};
 const searches = [
   { category: "家電", keywords: ["掃除機", "ドライヤー"] },
   { category: "ホビー", keywords: ["ゲームソフト", "フィギュア"] },
@@ -34,487 +26,197 @@ const searches = [
   { category: "ペット", keywords: ["ドッグフード", "キャットフード"] },
   { category: "日用品", keywords: ["洗濯洗剤", "トイレットペーパー"] }
 ];
-
-const checkedAt = new Date().toISOString();
-const japanDate = new Date(Date.now() + 9 * 60 * 60 * 1000)
-  .toISOString()
-  .slice(0, 10);
+const summary = { version: "shop-comparison-v1", checked_at: checkedAt, requests: 0, errors: {}, categories: [] };
+const shopSearchCache = new Map();
 
 function sleep(ms) {
-  if (!Number.isFinite(ms) || ms <= 0) return Promise.resolve();
-  return new Promise(resolvePromise => setTimeout(resolvePromise, ms));
-}
-
-function numberOrNull(value) {
-  if (value === null || value === undefined || value === "") return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
-function positiveNumber(value) {
-  const number = numberOrNull(value);
-  return number !== null && number > 0 ? number : null;
-}
-
-function median(values) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2
-    ? sorted[middle]
-    : (sorted[middle - 1] + sorted[middle]) / 2;
-}
-
-function percentageBelow(price, referencePrice) {
-  if (!price || !referencePrice || referencePrice <= price) return 0;
-  return Math.round(((referencePrice - price) / referencePrice) * 100);
-}
-
-function dealLabel(score) {
-  if (score >= 90) return "神セール候補";
-  if (score >= 80) return "かなりお得";
-  if (score >= 70) return "お得";
-  return "価格差あり";
-}
-
-function calculateDealScore({
-  discountPercent,
-  historicalDiscountPercent,
-  offerCount,
-  reviewAverage,
-  reviewCount
-}) {
-  const baseScore = 30;
-  const priceScore = Math.min(40, Math.max(0, discountPercent) * 2);
-  const historyScore = Math.min(
-    10,
-    Math.max(0, historicalDiscountPercent)
-  );
-  const offerScore = Math.min(
-    10,
-    Math.log2(Math.max(1, offerCount) + 1) * 2.5
-  );
-  const reviewQualityScore = reviewAverage > 0
-    ? Math.min(7, (reviewAverage / 5) * 7)
-    : 0;
-  const reviewVolumeScore = Math.min(
-    3,
-    Math.log10(Math.max(0, reviewCount) + 1)
-  );
-
-  return Math.min(
-    100,
-    Math.round(
-      baseScore +
-      priceScore +
-      historyScore +
-      offerScore +
-      reviewQualityScore +
-      reviewVolumeScore
-    )
-  );
+  return Number.isFinite(ms) && ms > 0 ? new Promise(done => setTimeout(done, ms)) : Promise.resolve();
 }
 
 function extractResults(data) {
   for (const key of ["items", "Items", "products", "Products", "Product", "product"]) {
-    if (Array.isArray(data?.[key]) && data[key].length) return data[key];
+    if (Array.isArray(data?.[key]) && data[key].length) {
+      return data[key].map(row => row?.product || row?.Product || row?.item || row?.Item || row)
+        .filter(row => row && typeof row === "object");
+    }
   }
   return [];
 }
 
-// Log only counts and field names, never raw API responses or credentials.
-function priceFieldStates(results, key) {
-  const states = { absent: 0, null: 0, empty: 0, zero: 0, positive: 0, other: 0 };
-  for (const row of results) {
-    const value = unwrapResult(row)?.[key];
-    if (value === undefined) states.absent++;
-    else if (value === null) states.null++;
-    else if (typeof value === "string" && !value.trim()) states.empty++;
-    else if ((typeof value === "number" || typeof value === "string") && Number(value) === 0) states.zero++;
-    else if ((typeof value === "number" || typeof value === "string") && positiveNumber(value)) states.positive++;
-    else states.other++;
+async function request(kind, params) {
+  const url = new URL(endpoints[kind]);
+  for (const [key, value] of Object.entries({ applicationId, format: "json", formatVersion: "2", ...params })) {
+    url.searchParams.set(key, String(value));
   }
-  return Object.entries(states).filter(([, count]) => count > 0).map(([state, count]) => `${state}:${count}`).join(" ") || "no_rows";
-}
-
-function logComparisonDiagnostics(data, results, normalized) {
-  const fields = Object.keys(data || {}).filter(key => /^[a-zA-Z][a-zA-Z0-9_]{0,50}$/.test(key));
-  const first = unwrapResult(results[0]);
-  const productFields = Object.keys(first || {}).filter(key => /^[a-zA-Z][a-zA-Z0-9_]{0,50}$/.test(key));
-  const missing = { name: 0, new_price: 0, average: 0, offers: 0, url: 0 };
-  for (const result of results) {
-    const p = unwrapResult(result) || {};
-    if (typeof p.productName !== "string" || !p.productName.trim()) missing.name++;
-    if (!positiveNumber(p.usedExcludeSalesMinPrice)) missing.new_price++;
-    if (!positiveNumber(p.averagePrice)) missing.average++;
-    if (!(numberOrNull(p.usedExcludeSalesItemCount) >= 2)) missing.offers++;
-    if (!String(p.affiliateUrl || p.productUrlPC || "").startsWith("https://")) missing.url++;
-  }
-  console.log(`[PRICE CHECK] rows=${results.length} valid=${normalized.length} cheaper=${normalized.filter(p => p.discount_percent > 0).length} missing=${JSON.stringify(missing)}`);
-  if (!normalized.length) {
-    if (!results.length) console.log(`[PRICE FIELDS] root=${fields.join(",")} product=${productFields.join(",")}`);
-    for (const key of ["usedExcludeSalesMinPrice", "averagePrice", "usedExcludeSalesItemCount", "salesMinPrice"]) {
-      console.log(`[PRICE VALUES] ${key} ${priceFieldStates(results, key)}`);
-    }
-  }
-}
-
-function unwrapResult(result) {
-  return result?.product ||
-    result?.Product ||
-    result?.item ||
-    result?.Item ||
-    result;
-}
-
-function getItemImage(item) {
-  const images =
-    item.mediumImageUrls ||
-    item.imageUrls ||
-    item.smallImageUrls ||
-    [];
-  const first = Array.isArray(images) ? images[0] : null;
-
-  if (typeof first === "string") return first;
-  return first?.imageUrl || "";
-}
-
-async function requestJSON(url, label) {
-  const response = await fetch(url, {
-    headers: {
-      accessKey,
-      Referer: siteURL
-    }
-  });
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(
-      `${label}の取得に失敗しました: HTTP ${response.status}`
-    );
-  }
-
+  if (affiliateId) url.searchParams.set("affiliateId", affiliateId);
+  // Serialize and throttle all calls, including product discovery.
+  if (summary.requests) await sleep(requestInterval);
+  summary.requests++;
+  let response;
   try {
-    return JSON.parse(responseText);
+    response = await fetch(url, {
+      headers: { accessKey, Referer: "https://no1-site.github.io/kyou-no-uriidashi/" },
+      signal: AbortSignal.timeout(15000)
+    });
+  } catch { throw new Error("network_or_timeout"); }
+  if (response.status === 404) return [];
+  if (!response.ok) {
+    const error = new Error(`HTTP_${response.status}`);
+    error.fatal = [401, 403, 429].includes(response.status);
+    throw error;
   }
-  catch {
-    throw new Error(`${label}の応答をJSONとして読み取れませんでした。`);
-  }
+  let data;
+  try { data = await response.json(); } catch { throw new Error("invalid_json"); }
+  if (data?.error || data?.errors) throw new Error("api_error");
+  if (!data || typeof data !== "object") throw new Error("invalid_response");
+  const rows = extractResults(data);
+  if (!rows.length && Number(data.count) > 0) throw new Error("unrecognized_response");
+  return rows;
 }
 
-async function loadHistory() {
+function recordError(error) {
+  // Never store request URLs, headers, raw API bodies or credentials.
+  const reason = /^(HTTP_\d{3}|network_or_timeout|invalid_json|api_error|invalid_response|unrecognized_response)$/.test(error.message)
+    ? error.message : "processing_error";
+  summary.errors[reason] = (summary.errors[reason] || 0) + 1;
+  console.log(`[API ERROR] ${reason}`);
+  if (error.fatal) throw error;
+}
+
+async function readHistory() {
   try {
     const data = JSON.parse(await readFile(historyPath, "utf8"));
-    return data && typeof data === "object" && data.products
-      ? data
-      : { products: {} };
+    if (data?.products && typeof data.products === "object" && !Array.isArray(data.products)) return data;
+  } catch (error) {
+    if (error.code !== "ENOENT") console.log("[HISTORY] unreadable; starting a new history");
   }
-  catch (error) {
-    if (error?.code !== "ENOENT") {
-      console.warn("価格履歴を読み込めなかったため、新しく作成します。");
-    }
-    return { products: {} };
-  }
+  return { products: {} };
 }
 
-function normalizeProduct(product, category, history) {
-  const name = typeof product.productName === "string"
-    ? product.productName.trim()
-    : "";
-  const price = positiveNumber(product.usedExcludeSalesMinPrice);
-  const marketPrice = positiveNumber(product.averagePrice);
-  const offerCount = Math.max(
-    0,
-    Math.trunc(numberOrNull(
-      product.usedExcludeSalesItemCount
-    ) || 0)
-  );
-  const productId = String(product.productId || "").trim();
-  const productCode = String(product.productCode || "").trim();
-  const productKey = productId || productCode || name;
-  const productURL =
-    product.affiliateUrl ||
-    product.productUrlPC ||
-    "";
-
-  if (
-    !name ||
-    !price ||
-    !marketPrice ||
-    offerCount < 2 ||
-    !productKey ||
-    !String(productURL).startsWith("https://")
-  ) {
-    return null;
-  }
-
-  const reviewAverage = numberOrNull(product.reviewAverage) || 0;
-  const reviewCount = Math.max(
-    0,
-    Math.trunc(numberOrNull(product.reviewCount) || 0)
-  );
-  const previousPrices = Array.isArray(history.products[productKey])
-    ? history.products[productKey]
-        .map(entry => positiveNumber(entry?.price))
-        .filter(Boolean)
-    : [];
-  const historicalPrice = previousPrices.length >= 2
-    ? Math.round(median(previousPrices))
-    : null;
-  const discountPercent = percentageBelow(price, marketPrice);
-  const historicalDiscountPercent = percentageBelow(price, historicalPrice);
-  const score = calculateDealScore({
-    discountPercent,
-    historicalDiscountPercent,
-    offerCount,
-    reviewAverage,
-    reviewCount
-  });
-
-  return {
-    id: productKey,
-    product_id: productId || null,
-    product_code: productCode || null,
-    name,
-    category,
-    shop: `楽天市場・販売中 ${offerCount}商品`,
-    price,
-    market_price: Math.round(marketPrice),
-    discount_percent: discountPercent,
-    historical_price: historicalPrice,
-    historical_discount_percent: historicalDiscountPercent || null,
-    offer_count: offerCount,
-    score,
-    deal_label: dealLabel(score),
-    reason: `楽天市場内の新品の購入可能な最低価格と、楽天APIの平均価格との差を基に判定しています（販売中${offerCount}商品）。`,
-    best_url: productURL,
-    compare_url: product.productUrlPC || productURL,
-    image_url: product.mediumImageUrl || product.smallImageUrl || "",
-    review_average: reviewAverage,
-    review_count: reviewCount,
-    comparison_type: "rakuten_product",
-    checked_at: checkedAt
-  };
+async function atomicJSON(path, value) {
+  await mkdir(dirname(path), { recursive: true });
+  const temporary = `${path}.${process.pid}.tmp`;
+  await writeFile(temporary, JSON.stringify(value, null, 2) + "\n", "utf8");
+  await rename(temporary, path);
 }
 
-function selectDeals(candidates) {
-  const selected = [];
-
-  for (const search of searches) {
-    const unique = new Map();
-
-    for (const candidate of candidates.filter(
-      item => item.category === search.category
-    )) {
-      const existing = unique.get(candidate.id);
-      if (!existing || candidate.score > existing.score) {
-        unique.set(candidate.id, candidate);
-      }
-    }
-
-    const sorted = [...unique.values()].sort((a, b) =>
-      b.score - a.score ||
-      b.discount_percent - a.discount_percent ||
-      b.offer_count - a.offer_count
-    );
-    const clearDeals = sorted.filter(item => item.discount_percent >= 5);
-    const categoryDeals = [...clearDeals];
-
-    if (categoryDeals.length < 2) {
-      for (const candidate of sorted) {
-        if (
-          candidate.discount_percent > 0 &&
-          !categoryDeals.some(item => item.id === candidate.id)
-        ) {
-          categoryDeals.push(candidate);
-        }
-        if (categoryDeals.length >= 2) break;
-      }
-    }
-
-    selected.push(...categoryDeals.slice(0, 2));
-  }
-
-  return selected.sort((a, b) => b.score - a.score);
-}
-
-async function fetchComparedProducts(history) {
-  const candidates = [];
-
-  for (const search of searches) {
-    for (const keyword of search.keywords) {
-      const url = new URL(productEndpoint);
-      url.searchParams.set("applicationId", applicationId);
-      url.searchParams.set("keyword", keyword);
-      url.searchParams.set("hits", "30");
-      url.searchParams.set("sort", "-satisfied");
-      url.searchParams.set("format", "json");
-      url.searchParams.set("formatVersion", "2");
-
-      if (affiliateId) {
-        url.searchParams.set("affiliateId", affiliateId);
-      }
-
-      try {
-        const data = await requestJSON(
-          url,
-          `${search.category}（${keyword}）`
-        );
-
-        const results = extractResults(data);
-        const normalized = [];
-        for (const result of results) {
-          const candidate = normalizeProduct(
-            unwrapResult(result),
-            search.category,
-            history
-          );
-          if (candidate) normalized.push(candidate);
-        }
-        logComparisonDiagnostics(data, results, normalized);
-        candidates.push(...normalized);
-      }
-      catch (error) {
-        console.warn(error.message);
-      }
-
-      await sleep(requestInterval);
-    }
-  }
-
-  return selectDeals(candidates);
-}
-
-async function fetchPopularFallback(targetSearches = searches) {
-  const products = [];
-
-  for (const search of targetSearches) {
-    const url = new URL(itemEndpoint);
-    url.searchParams.set("applicationId", applicationId);
-    url.searchParams.set("keyword", search.keywords[0]);
-    url.searchParams.set("hits", "2");
-    url.searchParams.set("sort", "-reviewCount");
-    url.searchParams.set("format", "json");
-
-    if (affiliateId) {
-      url.searchParams.set("affiliateId", affiliateId);
-    }
-
-    let data;
+async function discover(search, diagnostics) {
+  const lists = [];
+  for (const keyword of search.keywords) {
     try {
-      data = await requestJSON(url, `${search.category}の人気商品`);
-    }
-    catch (error) {
-      console.warn(error.message);
-      await sleep(requestInterval);
-      continue;
-    }
-
-    for (const result of extractResults(data).slice(0, 2)) {
-      const item = unwrapResult(result);
-      const reviewAverage = numberOrNull(item.reviewAverage) || 0;
-      const reviewCount = Math.max(
-        0,
-        Math.trunc(numberOrNull(item.reviewCount) || 0)
-      );
-
-      products.push({
-        id: item.itemCode || item.itemUrl,
-        name: item.itemName,
-        category: search.category,
-        shop: item.shopName || "楽天市場",
-        price: positiveNumber(item.itemPrice),
-        market_price: null,
-        discount_percent: null,
-        historical_price: null,
-        historical_discount_percent: null,
-        offer_count: null,
-        score: null,
-        deal_label: "価格比較待ち",
-        reason: "価格比較APIで候補を取得できなかったため、楽天市場のレビュー評価と件数を基に掲載しています。",
-        best_url: item.affiliateUrl || item.itemUrl,
-        compare_url: item.itemUrl,
-        image_url: getItemImage(item),
-        review_average: reviewAverage,
-        review_count: reviewCount,
-        comparison_type: "review_only",
-        checked_at: checkedAt
-      });
-    }
-
-    await sleep(requestInterval);
+      const rows = await request("product", { keyword, hits: 30, sort: "standard" });
+      diagnostics.catalog_rows += rows.length;
+      // Catalog is used for identity only; prices come from individual listings.
+      lists.push(rows.map(row => productIdentity(row, search.category)).filter(Boolean));
+    } catch (error) { recordError(error); }
   }
+  const unique = new Map();
+  // Alternate searches so one keyword cannot fill every candidate slot.
+  for (let index = 0; index < 30; index++) {
+    for (const list of lists) {
+      const identity = list[index];
+      if (identity && !unique.has(identity.id)) unique.set(identity.id, identity);
+    }
+  }
+  diagnostics.identities = unique.size;
+  return [...unique.values()];
+}
 
+async function listingSearch(keyword) {
+  if (!shopSearchCache.has(keyword)) {
+    const rows = await request("item", {
+      keyword, hits: 30, sort: "standard", availability: 1, purchaseType: 0, field: 0
+    });
+    shopSearchCache.set(keyword, rows);
+  }
+  return shopSearchCache.get(keyword);
+}
+
+async function compareCategory(search, history, diagnostics) {
+  const identities = await discover(search, diagnostics);
+  const products = [];
+  for (const identity of identities.slice(0, 8)) {
+    diagnostics.attempted++;
+    let rows = [];
+    let result;
+    const queries = [...new Set([identity.jan, identity.model ? `${identity.brand} ${identity.model}` : ""].filter(Boolean))];
+    for (const keyword of queries) {
+      try {
+        const found = await listingSearch(keyword);
+        rows = [...new Map([...rows, ...found].map(item => [item.itemCode || item.itemUrl, item])).values()];
+        result = buildComparison(identity, rows, { history, checkedAt });
+        if (result.product) break;
+      } catch (error) { recordError(error); }
+    }
+    diagnostics.listing_rows += rows.length;
+    if (!result) continue;
+    for (const [reason, count] of Object.entries(result.rejected)) {
+      diagnostics.excluded[reason] = (diagnostics.excluded[reason] || 0) + count;
+    }
+    if (result.matchedShops < 2) diagnostics.insufficient_shops++;
+    console.log(`[SHOP CHECK] category=${search.category} candidate=${diagnostics.attempted} rows=${rows.length} shops=${result.matchedShops}`);
+    if (result.product) products.push(result.product);
+    if (products.length >= 2) break;
+  }
+  diagnostics.compared = products.length;
   return products;
 }
 
+async function popularFallback(search) {
+  try {
+    const rows = await request("item", {
+      keyword: search.keywords[0], hits: 10, sort: "-reviewCount", availability: 1, purchaseType: 0
+    });
+    return rows.filter(item => item.itemName && positiveNumber(item.itemPrice) && httpsURL(item.affiliateUrl || item.itemUrl))
+      .slice(0, 2).map(item => ({
+        id: item.itemCode || item.itemUrl, name: item.itemName, category: search.category,
+        shop: item.shopName || "楽天市場", price: positiveNumber(item.itemPrice),
+        market_price: null, discount_percent: null, score: null, offer_count: null,
+        offers: [], deal_label: "比較条件未確認",
+        reason: "同一商品として比較できる2ショップ以上を確認できなかったため、価格差を判定せず参考商品として掲載しています。",
+        best_url: httpsURL(item.affiliateUrl || item.itemUrl), compare_url: httpsURL(item.itemUrl),
+        image_url: httpsURL(getItemImage(item)), review_average: Number(item.reviewAverage) || 0,
+        review_count: Number(item.reviewCount) || 0, comparison_type: "review_only", checked_at: checkedAt
+      }));
+  } catch (error) { recordError(error); return []; }
+}
+
 async function saveHistory(history, products) {
-  const retentionLimit = Date.now() - 120 * 24 * 60 * 60 * 1000;
-
-  for (const product of products.filter(
-    item => item.comparison_type === "rakuten_product"
-  )) {
-    const existing = Array.isArray(history.products[product.id])
-      ? history.products[product.id]
-      : [];
-    const retained = existing.filter(entry => {
-      const timestamp = Date.parse(entry?.checked_at);
-      return Number.isFinite(timestamp) &&
-        timestamp >= retentionLimit &&
-        entry.date !== japanDate;
-    });
-
-    retained.push({
-      date: japanDate,
-      price: product.price,
-      average_price: product.market_price,
-      checked_at: checkedAt
-    });
-    history.products[product.id] = retained.slice(-120);
+  const cutoff = Date.parse(checkedAt) - 120 * 86400000;
+  for (const [key, entries] of Object.entries(history.products)) {
+    const retained = Array.isArray(entries) ? entries.filter(entry => Date.parse(entry.checked_at) >= cutoff) : [];
+    if (retained.length) history.products[key] = retained;
+    else delete history.products[key];
   }
-
+  for (const product of products.filter(item => item.comparison_type === "rakuten_shops")) {
+    const entries = (history.products[product.id] || []).filter(entry => entry.date !== japanDate);
+    entries.push({ date: japanDate, price: product.price, average_price: product.market_price, checked_at: checkedAt });
+    history.products[product.id] = entries.slice(-120);
+  }
   history.updated_at = checkedAt;
-  await mkdir(dirname(historyPath), { recursive: true });
-  await writeFile(
-    historyPath,
-    JSON.stringify(history, null, 2) + "\n",
-    "utf8"
-  );
+  await atomicJSON(historyPath, history);
 }
 
-const history = await loadHistory();
-let products = await fetchComparedProducts(history);
-const comparedCategories = new Set(
-  products.map(product => product.category)
-);
-const missingSearches = searches.filter(
-  search => !comparedCategories.has(search.category)
-);
-
-if (missingSearches.length > 0) {
-  console.warn(
-    `${missingSearches.map(search => search.category).join("・")}は` +
-    "価格比較候補を取得できなかったため、人気商品を表示します。"
-  );
-  const fallbackProducts = await fetchPopularFallback(missingSearches);
-  products = [...products, ...fallbackProducts];
+const history = await readHistory();
+let products = [];
+console.log("[SHOP COMPARISON] Starting. This may take a few minutes.");
+for (const search of searches) {
+  const diagnostics = {
+    category: search.category, catalog_rows: 0, identities: 0, attempted: 0,
+    listing_rows: 0, compared: 0, insufficient_shops: 0, excluded: {}
+  };
+  const compared = await compareCategory(search, history, diagnostics);
+  summary.categories.push(diagnostics);
+  products.push(...(compared.length ? compared : await popularFallback(search)));
 }
-
-if (products.length === 0) {
-  throw new Error("楽天の商品を取得できませんでした。");
-}
-
+if (!products.length) throw new Error("No products fetched. Existing product data has been kept.");
+products.sort((a, b) => Number(b.comparison_type === "rakuten_shops") - Number(a.comparison_type === "rakuten_shops") || (b.score || 0) - (a.score || 0));
+const comparedCount = products.filter(product => product.comparison_type === "rakuten_shops").length;
+summary.compared = comparedCount;
+summary.reference_only = products.length - comparedCount;
+// Aggregate diagnostics travel with the normal products.json update. No raw responses.
+products[0].collection_summary = summary;
 await saveHistory(history, products);
-await writeFile(
-  outputPath,
-  JSON.stringify(products, null, 2) + "\n",
-  "utf8"
-);
-
-const comparedCount = products.filter(
-  product => product.comparison_type === "rakuten_product"
-).length;
-console.log(
-  `${products.length}件をproducts.jsonへ保存しました（価格比較済み${comparedCount}件）。`
-);
-console.log(`[PRICE RESULT] compared=${comparedCount} popular=${products.length - comparedCount}`);
+await atomicJSON(outputPath, products);
+console.log(`[PRICE RESULT] compared=${comparedCount} reference_only=${summary.reference_only}`);
+if (!comparedCount) console.log("[NOTICE] Product update finished, but no shop comparison was confirmed. Check collection_summary.");

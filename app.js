@@ -51,13 +51,42 @@ function validPositiveNumber(value) {
 function hasPriceComparison(item) {
   const price = validPositiveNumber(item.price);
   const marketPrice = validPositiveNumber(item.market_price);
-  const discount = validPositiveNumber(item.discount_percent);
-
-  return item.comparison_type === "rakuten_product" &&
+  return item.comparison_type === "rakuten_shops" &&
     price !== null &&
     marketPrice !== null &&
-    marketPrice > price &&
-    discount !== null;
+    marketPrice >= price &&
+    comparisonOffers(item).length >= 2;
+}
+
+function comparisonOffers(item) {
+  if (!Array.isArray(item.offers)) return [];
+  const shops = new Map();
+  for (const offer of item.offers) {
+    if (!offer || !offer.shop_code || !offer.shop_name ||
+        !validPositiveNumber(offer.price) || !safeURL(offer.url)) continue;
+    const current = shops.get(offer.shop_code);
+    if (!current || offer.price < current.price) shops.set(offer.shop_code, offer);
+  }
+  return [...shops.values()].sort((a, b) => Number(a.price) - Number(b.price));
+}
+
+function renderShopTable(item) {
+  const offers = comparisonOffers(item);
+  return `<div class="shop-comparison">
+    <p>確認した${offers.length}ショップの商品価格</p>
+    <div class="offer-table-wrap"><table class="offer-table">
+      <caption class="sr-only">${escapeHTML(item.name)}のショップ別税込価格と送料表示</caption>
+      <thead><tr><th scope="col">ショップ</th><th scope="col">税込価格</th><th scope="col">送料表示</th></tr></thead>
+      <tbody>${offers.map(offer => `<tr>
+        <th scope="row"><a class="offer-link" href="${escapeHTML(safeURL(offer.url))}" target="_blank"
+          rel="sponsored nofollow noopener noreferrer" data-product-name="${escapeHTML(item.name)}"
+          data-product-category="${escapeHTML(item.category)}">${escapeHTML(offer.shop_name)}</a></th>
+        <td>${formatPrice(offer.price)}</td>
+        <td>${offer.postage === "included" ? "送料込み" : offer.postage === "extra" ? "送料別" : "未確認"}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>
+    <p class="offer-note">送料込みの表示も配送先などで条件が変わる場合があります。</p>
+  </div>`;
 }
 
 function updateSignal() {
@@ -72,8 +101,8 @@ function updateSignal() {
 
   if (headingElement) {
     headingElement.textContent = comparedDeals.length
-      ? "楽天内で価格差が大きい商品"
-      : "楽天の人気商品（価格比較待ち）";
+      ? "楽天のショップ別価格比較"
+      : "楽天の参考商品（比較条件未確認）";
   }
 
   if (!top) {
@@ -87,17 +116,19 @@ function updateSignal() {
   scoreElement.textContent = Number.isFinite(score)
     ? String(Math.round(score))
     : "--";
-  labelElement.textContent = top.deal_label || "価格比較候補";
+  labelElement.textContent = hasPriceComparison(top) ? top.deal_label || "ショップ比較済み" : "比較条件未確認";
 
   if (hasPriceComparison(top)) {
-    const offerCount = Math.max(0, Math.trunc(Number(top.offer_count) || 0));
-    const discount = Math.round(Number(top.discount_percent));
+    const offerCount = comparisonOffers(top).length;
+    const discount = Math.max(0, Math.floor(Number(top.discount_percent) || 0));
     textElement.textContent =
-      `楽天市場内の販売中${offerCount}商品を比較。楽天APIの平均価格より${discount}%安い候補です。`;
+      discount > 0
+        ? `確認した${offerCount}ショップの商品価格を比較。比較店の平均より${discount}%低い価格です。`
+        : `確認した${offerCount}ショップの商品価格を比較しています。`;
   }
   else {
     textElement.textContent =
-      "価格比較データを取得できなかったため、レビュー情報を表示しています。";
+      "同一商品として比較できる2ショップ以上を確認できていないため、参考商品を表示しています。";
   }
 }
 
@@ -191,7 +222,7 @@ function render(filter) {
       ? `★ ${average.toFixed(1)} / 5（${count.toLocaleString("ja-JP")}件）`
       : "レビュー情報なし";
 
-    const offerCount = Math.max(0, Math.trunc(Number(item.offer_count) || 0));
+    const offerCount = comparisonOffers(item).length;
     const discount = compared
       ? Math.round(Number(item.discount_percent))
       : null;
@@ -204,7 +235,7 @@ function render(filter) {
       : "—";
     const scoreLabel = compared
       ? item.deal_label || "お買い得スコア"
-      : "価格比較待ち";
+      : "比較条件未確認";
 
     const visual = imageURL
       ? `<img
@@ -212,7 +243,7 @@ function render(filter) {
           alt="${escapeHTML(item.name)}"
           loading="lazy"
           referrerpolicy="no-referrer"
-          style="width:100%;height:180px;object-fit:contain;display:block;background:#fff;"
+          style="width:100%;height:100%;object-fit:contain;display:block;background:#fff;"
         >`
       : `<span>${emoji[item.category] || "🛍️"}</span>`;
 
@@ -224,18 +255,18 @@ function render(filter) {
           rel="sponsored nofollow noopener noreferrer"
           data-product-name="${escapeHTML(item.name)}"
           data-product-category="${escapeHTML(item.category)}"
-        >${compared ? "楽天市場で価格を比較" : "楽天市場で見る"}</a>`
+        >${compared ? "比較店の最安商品を見る" : "楽天市場で見る"}</a>`
       : "<span>実商品への切り替え準備中</span>";
 
     const comparisonBadges = compared
       ? `
-          <span class="badge hot">平均より${discount}%安い</span>
-          <span class="badge">販売中 ${offerCount}商品</span>
+          ${discount > 0 ? `<span class="badge hot">比較店平均より${discount}%低い</span>` : `<span class="badge">商品価格の差は小さめ</span>`}
+          <span class="badge">${offerCount}ショップ比較</span>
         `
-      : `<span class="badge">人気商品</span>`;
+      : `<span class="badge">参考商品・比較条件未確認</span>`;
 
     const historyBadge = historicalDiscount
-      ? `<span class="badge">過去価格より${Math.round(historicalDiscount)}%安い</span>`
+      ? `<span class="badge">過去の記録価格より${Math.round(historicalDiscount)}%低い</span>`
       : "";
 
     const reason = typeof item.reason === "string" && item.reason.trim()
@@ -256,10 +287,11 @@ function render(filter) {
           <h3>${escapeHTML(item.name)}</h3>
 
           <div class="price-line">
+            ${compared ? `<span class="price-caption">確認したショップ内の最安商品価格（税込）</span>` : ""}
             <span class="price">${formatPrice(item.price)}</span>
             ${
               compared
-                ? `<span class="market">楽天内平均 ${formatPrice(item.market_price)}</span>`
+                ? `<span class="market">比較${offerCount}店の平均 ${formatPrice(item.market_price)}</span>`
                 : ""
             }
           </div>
@@ -272,8 +304,10 @@ function render(filter) {
 
           <p class="why">
             ${escapeHTML(reason)}<br>
-            送料・ポイント・クーポンは未反映です。
+            送料の加算・ポイント・クーポンは比較価格に未反映です。
           </p>
+
+          ${compared ? renderShopTable(item) : ""}
 
           <div class="score-row">
             <span>${escapeHTML(scoreLabel)}</span>
@@ -301,7 +335,7 @@ document.querySelectorAll(".filter").forEach(button => {
 });
 
 document.querySelector("#dealGrid")?.addEventListener("click", event => {
-  const link = event.target.closest?.("a.shop-link");
+  const link = event.target.closest?.("a.shop-link, a.offer-link");
   if (!link || typeof window.gtag !== "function") return;
 
   window.gtag("event", "affiliate_click", {

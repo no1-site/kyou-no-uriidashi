@@ -11,10 +11,10 @@
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="楽天市場内の最低価格と平均価格を毎日比較し、価格差が大きい商品を紹介する『今日の売り出し』。">
+  <meta name="description" content="楽天市場の同一商品のショップ別価格を比較。確認した各店の価格・送料表示と価格差を紹介する『今日の売り出し』。">
   <meta name="theme-color" content="#111318">
   <title>今日の売り出し｜今日、本当に安いものだけ。</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=shops1">
 </head>
 <body>
   <div class="ad-disclosure">当サイトはアフィリエイト広告を利用しています。</div>
@@ -36,7 +36,7 @@
       <div class="hero-copy">
         <div class="eyebrow">DATA DEAL CURATION</div>
         <h1>「50%OFF」に<br>だまされない。</h1>
-        <p>まずは楽天市場内で同じ製品の新品最低価格・楽天APIの平均価格・販売中の商品数を比較し、価格差が明確な商品を毎日選びます。</p>
+        <p>楽天市場の同じ商品をショップごとに比較。確認した各店の商品価格と送料表示を並べて、価格差を分かりやすく紹介します。</p>
         <div class="hero-actions">
           <a class="primary" href="#today">今日の特価を見る</a>
           <span id="updated" class="updated">更新時刻を確認中…</span>
@@ -51,7 +51,7 @@
     </section>
 
     <section class="trust-row">
-      <div><b>楽天内比較</b><span>同一製品の最安・平均</span></div>
+      <div><b>ショップ別比較</b><span>確認した各店の価格を表示</span></div>
       <div><b>価格履歴</b><span>毎日の変化を記録</span></div>
       <div><b>広告優先なし</b><span>報酬額で順位を変えない</span></div>
       <div><b>毎日更新</b><span>10:10ごろ価格を確認</span></div>
@@ -61,7 +61,7 @@
       <div class="section-head">
         <div>
           <span class="eyebrow">TODAY</span>
-          <h2 id="dealHeading">楽天内で価格差が大きい商品</h2>
+          <h2 id="dealHeading">楽天のショップ別価格比較</h2>
         </div>
         <div class="filter-wrap">
           <button class="filter active" data-filter="all">すべて</button>
@@ -78,7 +78,8 @@
 
       <div class="method-note">
         <strong>掲載基準</strong>
-        <p>同じ製品の楽天市場内における新品の購入可能な最低価格・楽天APIの平均価格・販売中の商品数・レビュー・過去の取得価格から判定します。比較候補を取得できないカテゴリーでは、人気商品を「価格比較待ち」として表示します。送料・ポイント・クーポンはまだ反映していません。価格は変動するため、購入前に楽天市場で最新条件をご確認ください。</p>
+        <p>商品説明のJANコード、または商品名のメーカー・型番で照合します。中古・セット販売・選択式の表記や、容量・個数の不一致、価格が複数あるページは除外します。確認できたショップごとに1件の税込商品価格を採用し、その範囲で最安値と平均を計算します。楽天全体の最安値や相場を示すものではありません。</p>
+        <p>送料の加算・ポイント・クーポンは比較価格に未反映です。2ショップ以上で比較できないカテゴリーは、価格差を判定せず参考商品として掲載します。購入前に販売ページで内容・価格・送料などの最終条件をご確認ください。</p>
       </div>
     </section>
 
@@ -90,9 +91,9 @@
         </div>
       </div>
       <div class="steps">
-        <article><span>01</span><h3>同じ製品を特定</h3><p>JANコードや製品IDで、同一製品の情報をまとめます。</p></article>
-        <article><span>02</span><h3>楽天内価格を比較</h3><p>新品の購入可能な最低価格と楽天APIの平均価格、販売中の商品数を比べます。</p></article>
-        <article><span>03</span><h3>価格差をスコア化</h3><p>レビューと過去価格も加え、価格差が明確な商品を上位表示します。</p></article>
+        <article><span>01</span><h3>同じ商品を照合</h3><p>JANコードやメーカー・型番を確認し、異なる容量やセット品の混入を防ぎます。</p></article>
+        <article><span>02</span><h3>ショップ別に比較</h3><p>確認した各店の税込商品価格を並べ、送料込み・送料別の表示も添えます。</p></article>
+        <article><span>03</span><h3>価格差をスコア化</h3><p>比較店の平均との価格差に、レビューや過去の記録価格も加味して並べます。</p></article>
       </div>
     </section>
 
@@ -120,6 +121,6 @@
     <small>© 2026 今日の売り出し</small>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=shops1"></script>
 </body>
 </html>
