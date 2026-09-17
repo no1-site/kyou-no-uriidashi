@@ -123,6 +123,20 @@ function extractResults(data) {
 }
 
 // Log only counts and field names, never raw API responses or credentials.
+function priceFieldStates(results, key) {
+  const states = { absent: 0, null: 0, empty: 0, zero: 0, positive: 0, other: 0 };
+  for (const row of results) {
+    const value = unwrapResult(row)?.[key];
+    if (value === undefined) states.absent++;
+    else if (value === null) states.null++;
+    else if (typeof value === "string" && !value.trim()) states.empty++;
+    else if ((typeof value === "number" || typeof value === "string") && Number(value) === 0) states.zero++;
+    else if ((typeof value === "number" || typeof value === "string") && positiveNumber(value)) states.positive++;
+    else states.other++;
+  }
+  return Object.entries(states).filter(([, count]) => count > 0).map(([state, count]) => `${state}:${count}`).join(" ") || "no_rows";
+}
+
 function logComparisonDiagnostics(data, results, normalized) {
   const fields = Object.keys(data || {}).filter(key => /^[a-zA-Z][a-zA-Z0-9_]{0,50}$/.test(key));
   const first = unwrapResult(results[0]);
@@ -138,7 +152,10 @@ function logComparisonDiagnostics(data, results, normalized) {
   }
   console.log(`[PRICE CHECK] rows=${results.length} valid=${normalized.length} cheaper=${normalized.filter(p => p.discount_percent > 0).length} missing=${JSON.stringify(missing)}`);
   if (!normalized.length) {
-    console.log(`[PRICE FIELDS] root=${fields.join(",")} product=${productFields.join(",")}`);
+    if (!results.length) console.log(`[PRICE FIELDS] root=${fields.join(",")} product=${productFields.join(",")}`);
+    for (const key of ["usedExcludeSalesMinPrice", "averagePrice", "usedExcludeSalesItemCount", "salesMinPrice"]) {
+      console.log(`[PRICE VALUES] ${key} ${priceFieldStates(results, key)}`);
+    }
   }
 }
 
