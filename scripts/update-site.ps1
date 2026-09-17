@@ -46,6 +46,7 @@ try {
     $env:RAKUTEN_APPLICATION_ID = Reveal-SecureValue $settings.ApplicationId
     $env:RAKUTEN_ACCESS_KEY = Reveal-SecureValue $settings.AccessKey
     $env:RAKUTEN_AFFILIATE_ID = Reveal-SecureValue $settings.AffiliateId
+    $env:RAKUTEN_HISTORY_PATH = Join-Path $configDirectory "price-history.json"
 
     Write-UpdateLog "Starting update."
 
@@ -97,6 +98,7 @@ finally {
     Remove-Item Env:RAKUTEN_APPLICATION_ID -ErrorAction SilentlyContinue
     Remove-Item Env:RAKUTEN_ACCESS_KEY -ErrorAction SilentlyContinue
     Remove-Item Env:RAKUTEN_AFFILIATE_ID -ErrorAction SilentlyContinue
+    Remove-Item Env:RAKUTEN_HISTORY_PATH -ErrorAction SilentlyContinue
 
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName

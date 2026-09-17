@@ -67,6 +67,7 @@ main{max-width:var(--max);margin:auto;padding:0 22px 70px}
 .cta{margin-top:70px;background:#f1efe9;color:#111;border-radius:25px;padding:44px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:end}
 .cta .eyebrow{color:#c24422}.cta h2{font-size:40px;line-height:1.1;margin:6px 0 0}.cta p{margin:0;color:#555}
 footer{max-width:var(--max);margin:auto;padding:35px 22px 55px;border-top:1px solid var(--line);color:#9098a5;font-size:12px}
+.rakuten-credit{margin:14px 0}.rakuten-credit a{color:#cbd1da}
 .footer-brand{color:#fff;font-weight:800;font-size:18px;margin-bottom:10px}
 .footer-links{display:flex;gap:15px;margin-bottom:12px}.footer-links a{color:#cbd1da}
 .page{max-width:850px;margin:60px auto;padding:0 22px 80px}.page h1{font-size:42px}.page h2{margin-top:35px}.page p,.page li{color:#c2c8d1}
