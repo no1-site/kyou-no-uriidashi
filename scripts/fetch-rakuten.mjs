@@ -116,14 +116,30 @@ function calculateDealScore({
 }
 
 function extractResults(data) {
-  const results =
-    data?.items ||
-    data?.Items ||
-    data?.products ||
-    data?.Products ||
-    [];
+  for (const key of ["items", "Items", "products", "Products", "Product", "product"]) {
+    if (Array.isArray(data?.[key]) && data[key].length) return data[key];
+  }
+  return [];
+}
 
-  return Array.isArray(results) ? results : [];
+// Log only counts and field names, never raw API responses or credentials.
+function logComparisonDiagnostics(data, results, normalized) {
+  const fields = Object.keys(data || {}).filter(key => /^[a-zA-Z][a-zA-Z0-9_]{0,50}$/.test(key));
+  const first = unwrapResult(results[0]);
+  const productFields = Object.keys(first || {}).filter(key => /^[a-zA-Z][a-zA-Z0-9_]{0,50}$/.test(key));
+  const missing = { name: 0, new_price: 0, average: 0, offers: 0, url: 0 };
+  for (const result of results) {
+    const p = unwrapResult(result) || {};
+    if (typeof p.productName !== "string" || !p.productName.trim()) missing.name++;
+    if (!positiveNumber(p.usedExcludeSalesMinPrice)) missing.new_price++;
+    if (!positiveNumber(p.averagePrice)) missing.average++;
+    if (!(numberOrNull(p.usedExcludeSalesItemCount) >= 2)) missing.offers++;
+    if (!String(p.affiliateUrl || p.productUrlPC || "").startsWith("https://")) missing.url++;
+  }
+  console.log(`[PRICE CHECK] rows=${results.length} valid=${normalized.length} cheaper=${normalized.filter(p => p.discount_percent > 0).length} missing=${JSON.stringify(missing)}`);
+  if (!normalized.length) {
+    console.log(`[PRICE FIELDS] root=${fields.join(",")} product=${productFields.join(",")}`);
+  }
 }
 
 function unwrapResult(result) {
@@ -157,7 +173,7 @@ async function requestJSON(url, label) {
 
   if (!response.ok) {
     throw new Error(
-      `${label}の取得に失敗しました: ${response.status} ${responseText}`
+      `${label}の取得に失敗しました: HTTP ${response.status}`
     );
   }
 
@@ -188,18 +204,12 @@ function normalizeProduct(product, category, history) {
   const name = typeof product.productName === "string"
     ? product.productName.trim()
     : "";
-  const price = positiveNumber(
-    product.usedExcludeSalesMinPrice ??
-    product.salesMinPrice ??
-    product.minPrice
-  );
+  const price = positiveNumber(product.usedExcludeSalesMinPrice);
   const marketPrice = positiveNumber(product.averagePrice);
   const offerCount = Math.max(
     0,
     Math.trunc(numberOrNull(
-      product.usedExcludeSalesItemCount ??
-      product.salesItemCount ??
-      product.itemCount
+      product.usedExcludeSalesItemCount
     ) || 0)
   );
   const productId = String(product.productId || "").trim();
@@ -334,14 +344,18 @@ async function fetchComparedProducts(history) {
           `${search.category}（${keyword}）`
         );
 
-        for (const result of extractResults(data)) {
+        const results = extractResults(data);
+        const normalized = [];
+        for (const result of results) {
           const candidate = normalizeProduct(
             unwrapResult(result),
             search.category,
             history
           );
-          if (candidate) candidates.push(candidate);
+          if (candidate) normalized.push(candidate);
         }
+        logComparisonDiagnostics(data, results, normalized);
+        candidates.push(...normalized);
       }
       catch (error) {
         console.warn(error.message);
@@ -486,3 +500,4 @@ const comparedCount = products.filter(
 console.log(
   `${products.length}件をproducts.jsonへ保存しました（価格比較済み${comparedCount}件）。`
 );
+console.log(`[PRICE RESULT] compared=${comparedCount} popular=${products.length - comparedCount}`);
