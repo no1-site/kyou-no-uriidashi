@@ -2,20 +2,31 @@ name: 楽天商品取得
 
 on:
   workflow_dispatch:
+  schedule:
+    # 毎日6:00ごろ（日本時間）に実行
+    - cron: "0 21 * * *"
+  push:
+    paths:
+      - "scripts/fetch-rakuten.mjs"
+      - ".github/workflows/rakuten.yml"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: rakuten-products
+  cancel-in-progress: false
 
 jobs:
   fetch-products:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: サイトのファイルを取得
         uses: actions/checkout@v6
         with:
-          persist-credentials: false
+          fetch-depth: 0
 
       - name: Node.jsを準備
         uses: actions/setup-node@v4
@@ -60,6 +71,20 @@ jobs:
 
           console.log(`確認成功：${products.length}件`);
           NODE
+
+      - name: 更新した商品データを公開
+        run: |
+          if git diff --quiet -- products.json; then
+            echo "商品データに変更はありません。"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add products.json
+          git commit -m "楽天商品を自動更新 $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')"
+          git pull --rebase origin main
+          git push origin HEAD:main
 
       - name: 確認用の商品データを保存
         uses: actions/upload-artifact@v4
