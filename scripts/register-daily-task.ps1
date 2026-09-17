@@ -23,7 +23,7 @@ try {
         -Argument $arguments `
         -WorkingDirectory $repositoryPath
 
-    $trigger = New-ScheduledTaskTrigger -Daily -At "09:40"
+    $trigger = New-ScheduledTaskTrigger -Daily -At "10:10"
 
     $principal = New-ScheduledTaskPrincipal `
         -UserId $account `
@@ -42,7 +42,7 @@ try {
         -Trigger $trigger `
         -Principal $principal `
         -Settings $settings `
-        -Description "Update Rakuten products and publish Kyou no Uriidashi every day at 09:40."
+        -Description "Update Rakuten products and publish Kyou no Uriidashi every day at 10:10."
 
     Register-ScheduledTask `
         -TaskName $taskName `
@@ -55,7 +55,7 @@ try {
     Write-Host ""
     Write-Host "Daily update task was registered successfully."
     Write-Host ("Task name: " + $registered.TaskName)
-    Write-Host ("Schedule: Every day at 09:40")
+    Write-Host ("Schedule: Every day at 10:10")
     Write-Host ("Next run: " + $info.NextRunTime)
     Write-Host ""
     Write-Host "The task runs under the current Windows user after sign-in."
