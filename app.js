@@ -153,7 +153,9 @@ function updateSignal() {
       ...(amazonActive ? ["Amazon.co.jp"] : [])
     ];
     headingElement.textContent = comparedDeals.length
-      ? `${marketplaces.join("・")}の価格比較`
+      ? marketplaces.length === 1
+        ? `${marketplaces[0]}のショップ別価格比較`
+        : `${marketplaces.join("・")}の価格比較`
       : "参考商品（比較条件未確認）";
   }
 
