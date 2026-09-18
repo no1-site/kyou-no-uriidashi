@@ -35,6 +35,14 @@ function safeURL(value) {
   }
 }
 
+function amazonSearchURL(item) {
+  const query = String(item?.product_code || item?.model || item?.name || "").trim();
+  if (!query) return "";
+  const url = new URL("https://www.amazon.co.jp/s");
+  url.searchParams.set("k", query);
+  return url.href;
+}
+
 function formatPrice(value) {
   if (value === null || value === undefined || value === "") {
     return "価格未確認";
@@ -316,6 +324,19 @@ function render(filter) {
         >${compared ? "ショップで送料・条件を確認" : "楽天市場で見る"}</a>`
       : "<span>実商品への切り替え準備中</span>";
 
+    const hasAmazonOffer = comparisonOffers(item).some(offer => offer.marketplace_code === "amazon");
+    const amazonURL = !isSample && !hasAmazonOffer ? amazonSearchURL(item) : "";
+    const amazonSearchLink = amazonURL
+      ? `<a
+          class="shop-link amazon-search-link"
+          href="${escapeHTML(amazonURL)}"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+          data-product-name="${escapeHTML(item.name)}"
+          data-product-category="${escapeHTML(item.category)}"
+        >Amazonで価格を確認</a>`
+      : "";
+
     const comparisonBadges = compared
       ? `
           ${!scored ? `<span class="badge">送料確認が必要</span>` : discount > 0 ? `<span class="badge hot">送料込み表示の店の平均より${discount}%低い</span>` : `<span class="badge">商品価格の差は小さめ</span>`}
@@ -374,7 +395,9 @@ function render(filter) {
 
           <div class="shop-row">
             ${purchaseLink}
+            ${amazonSearchLink}
           </div>
+          ${amazonSearchLink ? '<p class="amazon-reference-note">Amazonの価格は現在の比較・スコアには含めていません。リンク先で最新価格をご確認ください。</p>' : ""}
         </div>
       </article>
     `;
@@ -396,7 +419,7 @@ document.querySelector("#dealGrid")?.addEventListener("click", event => {
   const link = event.target.closest?.("a.shop-link, a.offer-link");
   if (!link || typeof window.gtag !== "function") return;
 
-  window.gtag("event", "affiliate_click", {
+  window.gtag(link.classList?.contains("amazon-search-link") ? "amazon_search_click" : "affiliate_click", {
     item_name: link.dataset.productName || "",
     item_category: link.dataset.productCategory || "",
     link_url: link.href
