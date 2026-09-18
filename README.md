@@ -57,3 +57,14 @@ Yahoo!デベロッパーネットワークでショッピングAPI用のClient I
 Yahoo!ショッピングAPIは短時間の大量アクセスを避けるため、1リクエストごとに約1.1秒空けます。Yahoo連携が未設定でも楽天のみの更新は継続します。
 
 Yahoo!ショッピングのアフィリエイトIDは現時点では未設定で、まず価格比較を優先します。
+
+
+## Keepa / Amazon.co.jp連携
+
+Keepa APIを設定すると、楽天側で確認したJAN/EANコードを使ってAmazon.co.jp（domain 5）の商品を照合します。Keepa公式APIはUPC・EAN・ISBN-13によるProduct Requestに対応しており、同一コードから複数ASINが返る場合があります。そのため、JAN一致を必須にし、型番と商品名の一致度も確認して候補を選びます。
+
+Amazon価格はKeepaの `BUY_BOX_SHIPPING`（新商品のBuy Box価格・送料込み）を優先して比較対象にします。取得できない場合に `NEW` 価格があるときは送料条件未確認の参考値としてのみ掲載します。Keepa側の更新時刻や取得状況によりAmazonの商品・価格が取得できない場合があります。
+
+Keepa APIキーは `scripts/setup-keepa.cmd` で設定します。キーはWindowsユーザーに紐づく暗号化ファイル `%LOCALAPPDATA%\\KyouNoUriidashi\\keepa-credentials.xml` に保存し、GitHubには保存しません。Keepa未設定時は従来どおり楽天市場＋Yahoo!ショッピングだけで更新します。
+
+Keepa APIは有料サブスクリプション方式で、リクエストはトークンを消費します。現在の掲載数ではJANを最大100件まとめて照合する設計です。公開サービスでのデータ表示については、契約時に表示されるKeepaの最新利用条件も確認してください。
