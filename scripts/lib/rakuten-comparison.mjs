@@ -1,5 +1,5 @@
 // Pure matching and comparison rules. No credentials, network or file access.
-import { applyShippingPolicy, shippingPolicyVersion } from "../../shipping-policy.mjs";
+import { applyShippingPolicy, includedOffers, shippingPolicyVersion } from "../../shipping-policy.mjs";
 export const validationVersion = "quantity-v2";
 export function normalizeText(value) {
   return String(value ?? "").normalize("NFKC")
@@ -230,7 +230,9 @@ export function buildComparison(identity, items, { history = { products: {} }, c
   if (offers.length < 2) return { product: null, rejected, matchedShops: offers.length };
   // A large spread is a review trigger, never proof that an expensive shop is
   // wrong. Hold the whole comparison instead of cherry-picking cheaper shops.
-  if (offers.at(-1).price > offers[0].price * 3) {
+  const included = includedOffers(offers);
+  const priceGroup = included.length >= 2 ? included : offers;
+  if (priceGroup.at(-1).price > priceGroup[0].price * 3) {
     rejected.price_spread_unconfirmed = 1;
     return { product: null, rejected, matchedShops: offers.length };
   }

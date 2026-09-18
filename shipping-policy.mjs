@@ -1,5 +1,5 @@
 // Shared by the updater and the browser. No shipping amount is inferred.
-export const shippingPolicyVersion = "postage-v1";
+export const shippingPolicyVersion = "postage-subset-v2";
 
 export function effectivePostage(offer) {
   const status = offer?.postage;
@@ -12,10 +12,18 @@ export function effectivePostage(offer) {
   return status;
 }
 
+export function includedOffers(offers) {
+  const shops = new Map();
+  for (const o of Array.isArray(offers) ? offers : []) {
+    if (!o?.shop_code || !Number.isFinite(Number(o.price)) || Number(o.price) <= 0 || effectivePostage(o) !== "included") continue;
+    const previous = shops.get(o.shop_code);
+    if (!previous || Number(o.price) < Number(previous.price)) shops.set(o.shop_code, o);
+  }
+  return [...shops.values()].sort((a, b) => Number(a.price) - Number(b.price));
+}
+
 export function canRankPriceOffers(offers) {
-  return Array.isArray(offers) && offers.length >= 2 &&
-    new Set(offers.map(o => o?.shop_code)).size === offers.length &&
-    offers.every(o => o?.shop_code && Number.isFinite(Number(o.price)) && Number(o.price) > 0 && effectivePostage(o) === "included");
+  return includedOffers(offers).length >= 2;
 }
 
 export function postageLabel(offer) {
@@ -25,25 +33,32 @@ export function postageLabel(offer) {
 
 export function applyShippingPolicy(product) {
   if (product.comparison_type !== "rakuten_shops") return product;
-  const ready = canRankPriceOffers(product.offers);
+  const included = includedOffers(product.offers);
+  const ready = included.length >= 2;
   const sameHistoryBasis = product.shipping_policy_version === shippingPolicyVersion;
   const historicalPrice = ready && sameHistoryBasis ? product.historical_price : null;
-  const historicalDiscount = ready && sameHistoryBasis ? product.historical_discount_percent : null;
-  const average = ready ? product.offers.reduce((sum, o) => sum + Number(o.price), 0) / product.offers.length : null;
-  const discount = ready && average > product.price
-    ? Math.floor((average - product.price) / average * 100) : 0;
-  const lowest = product.offers?.[0];
+  const lowest = ready ? included[0] : [...(product.offers || [])].sort((a, b) => Number(a.price) - Number(b.price))[0];
+  const historicalDiscount = historicalPrice > lowest?.price
+    ? Math.floor((historicalPrice - lowest.price) / historicalPrice * 100) : null;
+  const average = ready ? included.reduce((sum, o) => sum + Number(o.price), 0) / included.length : null;
+  const discount = ready && average > lowest.price
+    ? Math.floor((average - lowest.price) / average * 100) : 0;
   const score = ready ? Math.min(100, Math.round(30 + Math.min(40, discount * 2) +
-    Math.min(10, historicalDiscount || 0) + Math.min(10, Math.log2(product.offers.length + 1) * 2.5) +
+    Math.min(10, historicalDiscount || 0) + Math.min(10, Math.log2(included.length + 1) * 2.5) +
     (lowest.review_average || 0) / 5 * 7 + Math.min(3, Math.log10((lowest.review_count || 0) + 1)))) : null;
   return {
     ...product, shipping_policy_version: shippingPolicyVersion,
+    ...(lowest ? { price: Number(lowest.price), shop: lowest.shop_name, best_url: lowest.url,
+      review_average: lowest.review_average || 0, review_count: lowest.review_count || 0 } : {}),
+    market_price: ready ? Math.round(average) : product.market_price,
+    shipping_offer_count: included.length,
+    shipping_reference_count: (product.offers?.length || 0) - included.length,
     shipping_comparison: ready ? "included" : "price_only",
     discount_percent: ready ? discount : null, score,
     historical_price: historicalPrice, historical_discount_percent: historicalDiscount,
     deal_label: ready ? "送料込み表示の店を比較" : "送料確認が必要",
     reason: ready
-      ? `送料込み表示の${product.offers.length}ショップの商品価格を比較しています。配送先などの適用条件は各店で確認してください。楽天全体の最安値・平均価格を保証するものではありません。`
-      : `確認した${product.offers?.length || 0}ショップの商品価格を掲載しています。送料別・送料未確認の出品があるため、安さの判定は保留しています。支払総額の順位ではありません。`
+      ? `送料込み表示の${included.length}ショップだけで比較しています。送料別・未確認の店は参考欄に掲載し、平均・スコアに含めません。配送先などの条件は各店で確認してください。楽天全体の最安値を保証するものではありません。`
+      : `送料込み表示の店が2店に満たないため、各店の商品価格を参考として掲載しています。支払総額の順位ではありません。`
   };
 }

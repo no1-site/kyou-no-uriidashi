@@ -1,4 +1,4 @@
-import { canRankPriceOffers, postageLabel, shippingPolicyVersion } from "./shipping-policy.mjs?v=shipping1";
+import { canRankPriceOffers, includedOffers, postageLabel, shippingPolicyVersion } from "./shipping-policy.mjs?v=shipping2";
 
 const emoji = {
   "家電": "⚡",
@@ -67,7 +67,9 @@ function comparisonHoldReason(item) {
     return "販売数量を新しい条件で再確認するまで、価格差の判定を保留しています。";
   }
   const offers = comparisonOffers(item);
-  if (offers.length >= 2 && Number(offers.at(-1).price) > Number(offers[0].price) * 3) {
+  const included = includedOffers(offers);
+  const priceGroup = included.length >= 2 ? included : offers;
+  if (priceGroup.length >= 2 && Number(priceGroup.at(-1).price) > Number(priceGroup[0].price) * 3) {
     return "ショップ間の価格差が大きいため、販売数量や条件を確認するまで価格差の判定を保留しています。";
   }
   return "";
@@ -84,8 +86,8 @@ function scoreValue(item) {
 
 function shippingMessage(item) {
   return canScore(item)
-    ? "送料込み表示の各店を比較しています。配送先などの適用条件は購入前に確認してください。"
-    : "送料が別途かかる場合や条件が未確認のため、安さの判定は保留しています。支払総額の順位ではありません。";
+    ? "送料込み表示の店同士で比較しています。送料別・要確認の店は参考欄に掲載し、平均やスコアには含めません。配送先などの条件は各店で確認してください。"
+    : "送料込み表示の店が2店に満たないため、安さの判定は保留しています。支払総額の順位ではありません。";
 }
 
 function comparisonOffers(item) {
@@ -102,20 +104,27 @@ function comparisonOffers(item) {
 
 function renderShopTable(item) {
   const offers = comparisonOffers(item);
+  const included = includedOffers(offers);
+  const keys = new Set(included.map(o => o.shop_code));
+  const reference = offers.filter(o => !keys.has(o.shop_code));
+  const groups = [
+    { title: `送料込み表示の店（${included.length}店${included.length >= 2 ? "・比較対象" : ""}）`, offers: included },
+    { title: `送料別・要確認の店（${reference.length}店・参考）`, offers: reference }
+  ].filter(g => g.offers.length);
   return `<div class="shop-comparison">
-    <p>確認した${offers.length}ショップの商品価格</p>
+    ${groups.map(group => `<p>${group.title}</p>
     <div class="offer-table-wrap"><table class="offer-table">
-      <caption class="sr-only">${escapeHTML(item.name)}のショップ別税込価格と送料表示</caption>
+      <caption class="sr-only">${escapeHTML(item.name)}：${group.title}</caption>
       <thead><tr><th scope="col">ショップ</th><th scope="col">税込価格</th><th scope="col">送料表示</th></tr></thead>
-      <tbody>${offers.map(offer => `<tr>
+      <tbody>${group.offers.map(offer => `<tr>
         <th scope="row"><a class="offer-link" href="${escapeHTML(safeURL(offer.url))}" target="_blank"
           rel="sponsored nofollow noopener noreferrer" data-product-name="${escapeHTML(item.name)}"
           data-product-category="${escapeHTML(item.category)}">${escapeHTML(offer.shop_name)}</a></th>
         <td>${formatPrice(offer.price)}</td>
         <td>${postageLabel(offer)}</td>
       </tr>`).join("")}</tbody>
-    </table></div>
-    <p class="offer-note">商品価格の低い順です。送料・配送先の条件で支払総額は変わる場合があります。</p>
+    </table></div>`).join("")}
+    <p class="offer-note">各欄は商品価格の低い順です。支払総額では参考欄の店の方が安い場合もあります。配送先などの条件は各店で確認してください。</p>
   </div>`;
 }
 
@@ -149,7 +158,7 @@ function updateSignal() {
   labelElement.textContent = hasPriceComparison(top) ? canScore(top) ? "送料込み表示の店を比較" : "送料確認が必要" : "比較条件未確認";
 
   if (hasPriceComparison(top)) {
-    const offerCount = comparisonOffers(top).length;
+    const offerCount = includedOffers(comparisonOffers(top)).length;
     const discount = Math.max(0, Math.floor(Number(top.discount_percent) || 0));
     textElement.textContent =
       canScore(top) && discount > 0
@@ -255,6 +264,8 @@ function render(filter) {
       : "レビュー情報なし";
 
     const offerCount = comparisonOffers(item).length;
+    const included = includedOffers(comparisonOffers(item));
+    const comparisonCount = included.length;
     const discount = scored
       ? Math.round(Number(item.discount_percent))
       : null;
@@ -293,7 +304,7 @@ function render(filter) {
     const comparisonBadges = compared
       ? `
           ${!scored ? `<span class="badge">送料確認が必要</span>` : discount > 0 ? `<span class="badge hot">送料込み表示の店の平均より${discount}%低い</span>` : `<span class="badge">商品価格の差は小さめ</span>`}
-          <span class="badge">${offerCount}ショップ比較</span>
+          <span class="badge">${scored ? `送料込み表示${comparisonCount}店で比較` : `${offerCount}店の価格を掲載`}</span>
         `
       : `<span class="badge">参考商品・比較条件未確認</span>`;
 
@@ -319,11 +330,11 @@ function render(filter) {
           <h3>${escapeHTML(item.name)}</h3>
 
           <div class="price-line">
-            ${compared ? `<span class="price-caption">掲載店の商品価格の最小値（税込・${postageLabel(comparisonOffers(item)[0])}）</span>` : ""}
+            ${compared ? `<span class="price-caption">${scored ? "送料込み表示の店の中で最安（税込）" : `掲載店の商品価格の最小値（税込・${postageLabel(comparisonOffers(item)[0])}）`}</span>` : ""}
             <span class="price">${formatPrice(item.price)}</span>
             ${
               scored
-                ? `<span class="market">比較${offerCount}店の平均 ${formatPrice(item.market_price)}</span>`
+                ? `<span class="market">送料込み表示${comparisonCount}店の平均 ${formatPrice(item.market_price)}</span>`
                 : ""
             }
           </div>

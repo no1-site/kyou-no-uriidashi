@@ -8,7 +8,8 @@ import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 import { productIdentity, validJAN, matchOffer, buildComparison, validationVersion } from "../lib/rakuten-comparison.mjs";
 import { selectionExclusion, selectionVersion } from "../lib/product-selection.mjs";
-import { effectivePostage, canRankPriceOffers, postageLabel, applyShippingPolicy, shippingPolicyVersion } from "../../shipping-policy.mjs";
+import { effectivePostage, includedOffers, canRankPriceOffers, postageLabel, applyShippingPolicy, shippingPolicyVersion } from "../../shipping-policy.mjs";
+import { extractShippingCandidates } from "../probe-shipping.mjs";
 
 const catalog = {
   productId: "soap", productCode: "4901234567894", productName: "テスト社 洗剤 500ml",
@@ -174,6 +175,32 @@ test("unknown or extra postage never produces a price advantage or history score
   assert.equal(applyShippingPolicy(legacy).historical_price, null);
 });
 
+test("included subset controls price, average, link and history; extra shops stay visible", () => {
+  const p = buildComparison(identity, [item("cheap", 100, { postageFlag: 1 }), item("one", 800), item("two", 1200), item("high", 9000, { postageFlag: 1 })]).product;
+  assert.ok(p);
+  assert.equal(p.price, 800);
+  assert.equal(p.market_price, 1000);
+  assert.equal(p.discount_percent, 20);
+  assert.equal(p.best_url, "https://example.com/one");
+  assert.equal(p.shop, "one店");
+  assert.equal(p.shipping_offer_count, 2);
+  assert.equal(p.shipping_reference_count, 2);
+  assert.equal(p.offers.length, 4);
+  assert.equal(p.offer_count, 4);
+  assert.equal(includedOffers([p.offers[1], p.offers[1]]).length, 1);
+  assert.equal(canRankPriceOffers([p.offers[1], p.offers[1]]), false);
+  const historical = applyShippingPolicy({ ...p, historical_price: 1600, historical_discount_percent: 99 });
+  assert.equal(historical.historical_discount_percent, 50);
+});
+
+test("shipping probe finds candidate amounts without mistaking them for a product quote", () => {
+  const r = extractShippingCandidates('<p>代引手数料 全国一律料金：220円</p><h2>配送について</h2><p>全国一律料金：660円</p><table><tr><td>送料</td><td>600円</td><td>1,210円</td></tr></table>');
+  assert.equal(r.status, "fee_candidates_found");
+  assert.equal(r.usable_for_totals, false);
+  assert.deepEqual(r.candidates, [{type:"flat_rate_candidate",yen:660},{type:"regional_row_candidate",fees_yen:[600,1210]}]);
+  assert.equal(extractShippingCandidates("no delivery info").status, "shipping_section_unconfirmed");
+});
+
 test("history excludes today and stale records and requires two distinct prior days", () => {
   const history = { products: { [identity.id]: [
     { date: "2026-09-16", price: 1100, checked_at: "2026-09-16T00:00:00Z" },
@@ -252,7 +279,7 @@ test("irrelevant catalog results do not consume the eight comparison candidate s
 
 test("UI shows shop links at equal prices, escapes labels and marks legacy data unconfirmed", async () => {
   const nodes = new Map(["#dealGrid", "#signalScore", "#signalLabel", "#signalText", "#dealHeading", "#updated"].map(id => [id, { textContent: "", innerHTML: "", addEventListener() {} }]));
-  const context = vm.createContext({ URL, console, canRankPriceOffers, postageLabel, shippingPolicyVersion, document: {
+  const context = vm.createContext({ URL, console, canRankPriceOffers, includedOffers, postageLabel, shippingPolicyVersion, document: {
     querySelector: id => nodes.get(id), querySelectorAll: () => []
   }, window: {} });
   const source = (await readFile(new URL("../../app.js", import.meta.url), "utf8"))
@@ -267,6 +294,16 @@ test("UI shows shop links at equal prices, escapes labels and marks legacy data 
   assert.match(nodes.get("#dealGrid").innerHTML, /&lt;img/);
   assert.doesNotMatch(nodes.get("#dealGrid").innerHTML, /0%低い/);
   assert.match(nodes.get("#dealHeading").textContent, /ショップ別/);
+  const mixed = buildComparison(identity, [item("cheap", 100, { postageFlag: 1 }), item("one", 800), item("two", 1200)]).product;
+  context.mixedProduct = mixed;
+  vm.runInContext("deals = [mixedProduct]; render('all'); updateSignal();", context);
+  const mixedHTML = nodes.get("#dealGrid").innerHTML;
+  assert.match(mixedHTML, /送料込み表示の店（2店・比較対象）/);
+  assert.match(mixedHTML, /送料別・要確認の店（1店・参考）/);
+  assert.match(mixedHTML, /送料込み表示2店の平均/);
+  assert.match(mixedHTML, /class="price">¥800/);
+  assert.ok(!mixedHTML.includes('class="price">¥100'));
+  assert.match(mixedHTML, /https:\/\/example.com\/cheap/);
   product.offers[0].postage = "extra";
   product.discount_percent = 80;
   product.historical_discount_percent = 99;
