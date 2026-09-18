@@ -69,6 +69,8 @@ main{max-width:var(--max);margin:auto;padding:0 22px 70px}
 .shop-row{display:flex;gap:7px;margin-top:12px}
 .shop-link{flex:1;text-decoration:none;text-align:center;padding:10px 8px;border-radius:9px;font-weight:800;font-size:12px;background:#222833}
 .shop-link.best{background:var(--orange)}
+.shop-link.amazon-search-link{background:#fff;color:#111}
+.amazon-reference-note{margin:7px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
 .method-note{margin-top:16px;border:1px solid var(--line);background:#11141a;border-radius:16px;padding:18px}
 .method-note strong{font-size:14px}.method-note p{margin:4px 0 0;color:var(--muted);font-size:12px}
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
