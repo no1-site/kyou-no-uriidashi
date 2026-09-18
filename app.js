@@ -139,8 +139,12 @@ function updateSignal() {
   const top = comparedDeals.find(canScore) || comparedDeals[0] || deals[0];
 
   if (headingElement) {
+    const yahooActive = deals.some(item =>
+      Number(item?.collection_summary?.yahoo?.added_offers || 0) > 0 ||
+      item?.offers?.some?.(offer => offer?.marketplace_code === "yahoo")
+    );
     headingElement.textContent = comparedDeals.length
-      ? "楽天市場・Yahoo!ショッピングの価格比較"
+      ? yahooActive ? "楽天市場・Yahoo!ショッピングの価格比較" : "楽天市場のショップ別価格比較"
       : "参考商品（比較条件未確認）";
   }
 
