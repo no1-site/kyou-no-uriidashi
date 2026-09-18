@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildComparison, productIdentity, positiveNumber, getItemImage, httpsURL } from "./lib/rakuten-comparison.mjs";
+import { buildComparison, productIdentity, positiveNumber, getItemImage, httpsURL, validationVersion } from "./lib/rakuten-comparison.mjs";
 
 const applicationId = process.env.RAKUTEN_APPLICATION_ID;
 const accessKey = process.env.RAKUTEN_ACCESS_KEY;
@@ -26,7 +26,7 @@ const searches = [
   { category: "ペット", keywords: ["ドッグフード", "キャットフード"] },
   { category: "日用品", keywords: ["洗濯洗剤", "トイレットペーパー"] }
 ];
-const summary = { version: "shop-comparison-v1", checked_at: checkedAt, requests: 0, errors: {}, categories: [] };
+const summary = { version: "shop-comparison-v2", validation_version: validationVersion, checked_at: checkedAt, requests: 0, errors: {}, categories: [] };
 const shopSearchCache = new Map();
 
 function sleep(ms) {
@@ -190,7 +190,7 @@ async function saveHistory(history, products) {
   }
   for (const product of products.filter(item => item.comparison_type === "rakuten_shops")) {
     const entries = (history.products[product.id] || []).filter(entry => entry.date !== japanDate);
-    entries.push({ date: japanDate, price: product.price, average_price: product.market_price, checked_at: checkedAt });
+    entries.push({ date: japanDate, price: product.price, average_price: product.market_price, checked_at: checkedAt, validation_version: validationVersion });
     history.products[product.id] = entries.slice(-120);
   }
   history.updated_at = checkedAt;

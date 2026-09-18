@@ -52,10 +52,23 @@ function hasPriceComparison(item) {
   const price = validPositiveNumber(item.price);
   const marketPrice = validPositiveNumber(item.market_price);
   return item.comparison_type === "rakuten_shops" &&
+    !comparisonHoldReason(item) &&
     price !== null &&
     marketPrice !== null &&
     marketPrice >= price &&
     comparisonOffers(item).length >= 2;
+}
+
+function comparisonHoldReason(item) {
+  if (item.comparison_type !== "rakuten_shops") return "";
+  if (item.validation_version !== "quantity-v2") {
+    return "販売数量を新しい条件で再確認するまで、価格差の判定を保留しています。";
+  }
+  const offers = comparisonOffers(item);
+  if (offers.length >= 2 && Number(offers.at(-1).price) > Number(offers[0].price) * 3) {
+    return "ショップ間の価格差が大きいため、販売数量や条件を確認するまで価格差の判定を保留しています。";
+  }
+  return "";
 }
 
 function comparisonOffers(item) {
@@ -128,7 +141,7 @@ function updateSignal() {
   }
   else {
     textElement.textContent =
-      "同一商品として比較できる2ショップ以上を確認できていないため、参考商品を表示しています。";
+      comparisonHoldReason(top) || "同一商品として比較できる2ショップ以上を確認できていないため、参考商品を表示しています。";
   }
 }
 
@@ -265,13 +278,13 @@ function render(filter) {
         `
       : `<span class="badge">参考商品・比較条件未確認</span>`;
 
-    const historyBadge = historicalDiscount
+    const historyBadge = compared && historicalDiscount
       ? `<span class="badge">過去の記録価格より${Math.round(historicalDiscount)}%低い</span>`
       : "";
 
-    const reason = typeof item.reason === "string" && item.reason.trim()
+    const reason = comparisonHoldReason(item) || (typeof item.reason === "string" && item.reason.trim()
       ? item.reason
-      : "取得時点の商品情報を掲載しています。";
+      : "取得時点の商品情報を掲載しています。");
 
     return `
       <article class="deal">

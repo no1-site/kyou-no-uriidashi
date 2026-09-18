@@ -1,4 +1,5 @@
 // Pure matching and comparison rules. No credentials, network or file access.
+export const validationVersion = "quantity-v2";
 export function normalizeText(value) {
   return String(value ?? "").normalize("NFKC")
     .replace(/<[^>]*>/g, " ")
@@ -52,7 +53,7 @@ function hasExactModel(title, model) {
 
 function quantities(text) {
   const values = new Set();
-  const pattern = /(?<![a-z0-9.])(\d+(?:\.\d+)?)\s*(kg|mg|g|ml|l|個|本|袋|箱|枚|錠|粒|包|缶|巻|組|台|セット|パック)(?![a-z])/g;
+  const pattern = /(?<![a-z0-9.])(\d+(?:\.\d+)?)\s*(kg|mg|g|ml|l|個|本|袋|箱|枚|錠|粒|包|缶|巻|組|台|食|膳|点|ロール|pcs|セット|パック)(?![a-z])/g;
   for (const [, amount, unit] of text.matchAll(pattern)) {
     let value = Number(amount);
     if (unit === "kg") { values.add(`weight:${value * 1000}`); continue; }
@@ -75,6 +76,27 @@ const accessoryTerms = ["フィルター", "替えブラシ", "交換用", "部�
 function hasBundle(text) {
   // A headset is a product; "headset + mouse set" must still be rejected.
   return bundlePattern.test(text.replace(/ヘッドセット/g, ""));
+}
+
+function quantityProblem(caption, expected) {
+  // A bare bullet number has no documented unit (real listing: "●50●JAN").
+  // Do not guess whether it means pieces, weight or a product specification.
+  if (/(?:^|[●○■◆])\s*\d+(?:\.\d+)?\s*(?=[●○■◆]|$)/.test(caption)) {
+    return "quantity_unconfirmed";
+  }
+  // Stop at field delimiters, not an arbitrary 40-character cut-off. HTML cells
+  // become spaces in normalizeText, while explicit labels still delimit fields.
+  const labels = /(?:内容量|入り数|入数|セット内容|販売単位|販売数量|商品数量)\s*[:/：]?\s*([^●○■◆。;\n]{1,160})/g;
+  for (const [, contents] of caption.matchAll(labels)) {
+    if (multiplierPattern.test(contents) || hasBundle(contents)) return "variant_or_bundle";
+    const amount = contents.match(/^(\d+(?:\.\d+)?)(?![\d.])\s*(.*)/);
+    const hasUnit = amount && /^(?:kg|mg|g|ml|l|個|本|袋|箱|枚|錠|粒|包|缶|巻|組|台|食|膳|点|ロール|pcs|セット|パック)(?![a-z])/.test(amount[2]);
+    if (amount && !hasUnit && Number(amount[1]) !== 1) return "quantity_unconfirmed";
+    for (const quantity of quantities(contents)) {
+      if (!expected.has(quantity)) return "quantity_mismatch";
+    }
+  }
+  return "";
 }
 
 export function productIdentity(product, category) {
@@ -134,13 +156,8 @@ export function matchOffer(identity, item, now = Date.now()) {
   for (const quantity of actual) {
     if (!expected.has(quantity)) return { reason: "quantity_mismatch" };
   }
-  // Inspect explicitly labelled contents, without treating every number in shop boilerplate as a size.
-  for (const [, contents] of caption.matchAll(/(?:内容量|入数|セット内容|販売単位)\s*[:：]?\s*([^。\n]{1,40})/g)) {
-    if (multiplierPattern.test(contents)) return { reason: "variant_or_bundle" };
-    for (const quantity of quantities(contents)) {
-      if (!expected.has(quantity)) return { reason: "quantity_mismatch" };
-    }
-  }
+  const quantityReason = quantityProblem(caption, expected);
+  if (quantityReason) return { reason: quantityReason };
   const codes = janCodes(text);
   if (codes.some(code => code !== identity.jan)) return { reason: "conflicting_jan" };
   let matchMethod = "";
@@ -210,6 +227,12 @@ export function buildComparison(identity, items, { history = { products: {} }, c
   }
   const offers = [...shops.values()].sort((a, b) => a.price - b.price || a.shop_code.localeCompare(b.shop_code));
   if (offers.length < 2) return { product: null, rejected, matchedShops: offers.length };
+  // A large spread is a review trigger, never proof that an expensive shop is
+  // wrong. Hold the whole comparison instead of cherry-picking cheaper shops.
+  if (offers.at(-1).price > offers[0].price * 3) {
+    rejected.price_spread_unconfirmed = 1;
+    return { product: null, rejected, matchedShops: offers.length };
+  }
   const lowest = offers[0];
   const average = offers.reduce((sum, offer) => sum + offer.price, 0) / offers.length;
   const discount = percentageBelow(lowest.price, average);
@@ -217,7 +240,7 @@ export function buildComparison(identity, items, { history = { products: {} }, c
   const days = new Map();
   const previous = history.products?.[identity.id];
   for (const entry of Array.isArray(previous) ? previous : []) {
-    if (!entry || typeof entry.date !== "string") continue;
+    if (!entry || entry.validation_version !== validationVersion || typeof entry.date !== "string") continue;
     const timestamp = Date.parse(entry.checked_at);
     if (entry.date !== today && timestamp < Date.parse(checkedAt) && timestamp >= Date.parse(checkedAt) - 120 * 86400000 && positiveNumber(entry.price)) {
       days.set(entry.date, entry.price);
@@ -241,6 +264,7 @@ export function buildComparison(identity, items, { history = { products: {} }, c
     image_url: identity.image_url || lowest.image_url,
     review_average: lowest.review_average, review_count: lowest.review_count,
     comparison_type: "rakuten_shops", comparison_basis: "listed_price_tax_included",
+    validation_version: validationVersion,
     checked_at: checkedAt
   } };
 }

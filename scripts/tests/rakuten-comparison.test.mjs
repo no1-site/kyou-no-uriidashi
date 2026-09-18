@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import vm from "node:vm";
-import { productIdentity, validJAN, matchOffer, buildComparison } from "../lib/rakuten-comparison.mjs";
+import { productIdentity, validJAN, matchOffer, buildComparison, validationVersion } from "../lib/rakuten-comparison.mjs";
 
 const catalog = {
   productId: "soap", productCode: "4901234567894", productName: "テスト社 洗剤 500ml",
@@ -69,6 +69,47 @@ test("stock, tax, time-limited offers and variable SKU prices are checked", () =
   ]) assert.ok(!matchOffer(identity, item("one", 800, overrides)).offer, JSON.stringify(overrides));
 });
 
+test("unitless quantities, HTML cells and meal counts cannot silently pass a JAN match", () => {
+  for (const caption of [
+    "入数：50", "入数／50", "入り数 50 備考：常温保存", "販売数量：20",
+    "<table><tr><th>入数</th><td>50</td></tr></table>",
+    "内容量／500ml ●50●JAN 4901234567894"
+  ]) {
+    assert.equal(matchOffer(identity, item("one", 800, { itemCaption: `JAN 4901234567894 ${caption}` })).reason, "quantity_unconfirmed", caption);
+  }
+  for (const caption of ["入数／50食", "内容量／500ml 20袋", "販売単位：2個", "内容量：500ml×50"]) {
+    assert.ok(!matchOffer(identity, item("one", 800, { itemCaption: `JAN 4901234567894 ${caption}` })).offer, caption);
+  }
+  for (const caption of ["内容量／500ml", "入数：1", "入数／1本", "内容量：0.5L ●保存期間7年 ●JAN 4901234567894"]) {
+    assert.ok(matchOffer(identity, item("one", 800, { itemCaption: `JAN 4901234567894 ${caption}` })).offer, caption);
+  }
+  const pack = productIdentity({ ...catalog, productName: "洗剤14個入" }, "日用品");
+  assert.ok(matchOffer(pack, item("one", 800, { itemName: "洗剤14個入", itemCaption: "JAN 4901234567894 入数：14個" })).offer);
+});
+
+test("the observed rice listing with an unlabelled 50 is excluded before averaging", () => {
+  const rice = productIdentity({ productName: "ななこめっつ 青菜ご飯(70g)", productCode: "4531717311036" }, "食品");
+  const riceItem = (shop, price, caption = "JAN 4531717311036") => item(shop, price, {
+    itemName: "ななこめっつ 青菜ご飯70g", itemCaption: caption
+  });
+  const result = buildComparison(rice, [riceItem("one", 419), riceItem("two", 628),
+    riceItem("bulk", 23286, "賞味期限／製造後7年●50●JAN 4531717311036")]);
+  assert.equal(result.product.offer_count, 2);
+  assert.equal(result.product.market_price, 524);
+  assert.equal(result.product.discount_percent, 19);
+  assert.equal(result.rejected.quantity_unconfirmed, 1);
+  assert.equal(result.product.validation_version, validationVersion);
+});
+
+test("a price spread over threefold holds the entire comparison, including low outliers", () => {
+  for (const prices of [[419, 628, 23286], [100, 1000, 1100], [100, 301]]) {
+    const result = buildComparison(identity, prices.map((price, i) => item(`shop${i}`, price)));
+    assert.equal(result.product, null);
+    assert.equal(result.rejected.price_spread_unconfirmed, 1);
+  }
+  assert.ok(buildComparison(identity, [item("one", 100), item("two", 300)]).product);
+});
+
 test("model matching keeps brand, full suffix and capacity significant", () => {
   const base = item("one", 800, { itemCaption: "", itemName: "テスト社 SOAP-500-W 洗剤 500ml" });
   assert.equal(matchOffer(identity, base).offer.match_method, "model_brand");
@@ -91,8 +132,11 @@ test("history excludes today and stale records and requires two distinct prior d
     { date: "2026-09-17", price: 5000, checked_at: "2026-09-17T00:00:00Z" },
     { date: "2025-01-01", price: 99999, checked_at: "2025-01-01T00:00:00Z" }
   ] } };
+  for (const entry of history.products[identity.id]) entry.validation_version = validationVersion;
   const { product } = buildComparison(identity, [item("one", 800), item("two", 1000)], { history, checkedAt: "2026-09-17T01:00:00Z" });
   assert.equal(product.historical_price, 1200);
+  for (const entry of history.products[identity.id]) delete entry.validation_version;
+  assert.equal(buildComparison(identity, [item("one", 800), item("two", 1000)], { history, checkedAt: "2026-09-17T01:00:00Z" }).product.historical_price, null);
 });
 
 test("pipeline produces 12 comparisons with null catalog averages and publishes only safe diagnostic counts", async () => {
@@ -108,7 +152,10 @@ test("pipeline produces 12 comparisons with null catalog averages and publishes 
   assert.equal(products.filter(p => p.comparison_type === "rakuten_shops").length, 12);
   assert.equal(new Set(products.map(p => p.id)).size, 12);
   assert.ok(products.every(p => p.offers.length === 2 && p.market_price === 1000));
-  assert.equal(products[0].collection_summary.version, "shop-comparison-v1");
+  assert.equal(products[0].collection_summary.version, "shop-comparison-v2");
+  assert.ok(products.every(p => p.validation_version === validationVersion));
+  const history = JSON.parse(await readFile(join(directory, "history.json"), "utf8"));
+  assert.ok(Object.values(history.products).flat().every(entry => entry.validation_version === validationVersion));
   assert.ok(!content.includes("private-test"));
   assert.ok(!result.stdout.includes("private-test"));
 });
@@ -145,6 +192,19 @@ test("UI shows shop links at equal prices, escapes labels and marks legacy data 
   assert.match(nodes.get("#dealGrid").innerHTML, /&lt;img/);
   assert.doesNotMatch(nodes.get("#dealGrid").innerHTML, /0%低い/);
   assert.match(nodes.get("#dealHeading").textContent, /ショップ別/);
+  product.market_price = 8111;
+  product.discount_percent = 94;
+  product.historical_discount_percent = 99;
+  product.offers[1].price = 23286;
+  vm.runInContext("deals = [testProduct]; render('all'); updateSignal();", context);
+  assert.equal(nodes.get("#signalScore").textContent, "--");
+  assert.match(nodes.get("#dealGrid").innerHTML, /判定を保留/);
+  assert.doesNotMatch(nodes.get("#dealGrid").innerHTML, /94%|99%|比較2店の平均|offer-table|最安商品/);
+  product.offers[1].price = 1000;
+  delete product.validation_version;
+  vm.runInContext("deals = [testProduct]; render('all'); updateSignal();", context);
+  assert.equal(nodes.get("#signalScore").textContent, "--");
+  assert.match(nodes.get("#dealGrid").innerHTML, /販売数量を新しい条件で再確認/);
   vm.runInContext("deals = [{ name: 'legacy', price: 123, score: 99 }]; render('all'); updateSignal();", context);
   assert.equal(nodes.get("#signalScore").textContent, "--");
   assert.match(nodes.get("#dealHeading").textContent, /比較条件未確認/);
