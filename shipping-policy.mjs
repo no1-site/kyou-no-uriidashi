@@ -58,7 +58,7 @@ export function applyShippingPolicy(product) {
     historical_price: historicalPrice, historical_discount_percent: historicalDiscount,
     deal_label: ready ? "送料込み表示の店を比較" : "送料確認が必要",
     reason: ready
-      ? `送料込み表示の${included.length}ショップだけで比較しています。送料別・未確認の店は参考欄に掲載し、平均・スコアに含めません。配送先などの条件は各店で確認してください。楽天全体の最安値を保証するものではありません。`
+      ? `送料込み表示の${included.length}ショップだけで比較しています。送料別・未確認の店は参考欄に掲載し、平均・スコアに含めません。配送先などの条件は各店で確認してください。掲載対象外を含む各モール全体の最安値を保証するものではありません。`
       : `送料込み表示の店が2店に満たないため、各店の商品価格を参考として掲載しています。支払総額の順位ではありません。`
   };
 }

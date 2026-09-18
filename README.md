@@ -1,10 +1,10 @@
 # 今日の売り出し — ショップ別価格比較
 
-楽天市場の同一商品のショップ別価格を確認し、GitHub Pagesで表示します。
+楽天市場で同一商品を確認したうえで、JANコードが取得できる商品はYahoo!ショッピングも横断して価格を比較し、GitHub Pagesで表示します。
 
 ## 更新
 
-Windowsの `scripts/run-update-now.cmd` を実行します。保存済み認証情報を使い、最新コードの取得 → 楽天情報の取得 → `products.json` の送信を行います。既存の毎日10:10のタスク登録をやり直す必要はありません。
+Windowsの `scripts/run-update-now.cmd` を実行します。保存済み認証情報を使い、最新コードの取得 → 楽天情報の取得 → Yahoo!ショッピング情報の取得（設定済みの場合）→ `products.json` の送信を行います。既存の毎日10:10のタスク登録をやり直す必要はありません。
 
 完了時の `[PRICE RESULT] compared=N reference_only=M` が比較結果です。サイトへの送信成功と、価格比較の成立は別です。`compared=0` の場合は参考商品のみの更新です。
 
@@ -46,3 +46,14 @@ Node.js 20以降で `node --test scripts/tests/rakuten-comparison.test.mjs` を�
 
 - [楽天市場商品検索API](https://webservice.rakuten.co.jp/documentation/ichiba-item-search)
 - [商品価格ナビ製品検索API](https://webservice.rakuten.co.jp/documentation/ichiba-product-search)
+
+
+## Yahoo!ショッピング連携
+
+Yahoo!デベロッパーネットワークでショッピングAPI用のClient IDを発行したら、Windowsで `scripts/setup-yahoo.ps1` を実行します。Client IDはWindowsユーザーに紐づく暗号化ファイルとして `%LOCALAPPDATA%\\KyouNoUriidashi\\yahoo-credentials.xml` に保存し、GitHubには保存しません。
+
+連携後は、楽天側でJANコードまで確認できた掲載商品についてYahoo!ショッピングの商品検索（v3）をJANコードで検索します。在庫あり・新品・同一JANの商品だけを追加し、ストア単位で最低価格を採用します。Yahoo!ショッピングAPIの送料コード2（送料無料）は送料込み表示として扱い、コード1（設定なし）・3（条件付き送料無料）は送料要確認として平均・スコアから除外します。ポイント・クーポンは価格比較に未反映です。
+
+Yahoo!ショッピングAPIは短時間の大量アクセスを避けるため、1リクエストごとに約1.1秒空けます。Yahoo連携が未設定でも楽天のみの更新は継続します。
+
+Yahoo!ショッピングのアフィリエイトIDは現時点では未設定で、まず価格比較を優先します。

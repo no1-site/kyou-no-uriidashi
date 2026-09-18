@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 $repositoryPath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $configDirectory = Join-Path $env:LOCALAPPDATA "KyouNoUriidashi"
 $configPath = Join-Path $configDirectory "rakuten-credentials.xml"
+$yahooConfigPath = Join-Path $configDirectory "yahoo-credentials.xml"
 $logPath = Join-Path $configDirectory "update.log"
 
 New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
@@ -48,6 +49,11 @@ try {
     $env:RAKUTEN_AFFILIATE_ID = Reveal-SecureValue $settings.AffiliateId
     $env:RAKUTEN_HISTORY_PATH = Join-Path $configDirectory "price-history.json"
 
+    if (Test-Path $yahooConfigPath) {
+        $yahooSettings = Import-Clixml -Path $yahooConfigPath
+        $env:YAHOO_CLIENT_ID = Reveal-SecureValue $yahooSettings.ClientId
+    }
+
     Write-UpdateLog "Starting update."
 
     & $gitExecutable -C $repositoryPath pull --ff-only |
@@ -62,6 +68,17 @@ try {
         throw "Could not fetch Rakuten products."
     }
 
+    if ($env:YAHOO_CLIENT_ID) {
+        & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\\fetch-yahoo.mjs") |
+            Tee-Object -FilePath $logPath -Append
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not fetch Yahoo! Shopping products."
+        }
+    }
+    else {
+        Write-UpdateLog "Yahoo! Shopping Client ID not configured; skipping Yahoo comparison."
+    }
+
     & $gitExecutable -C $repositoryPath config user.name "no1-site"
     & $gitExecutable -C $repositoryPath config user.email "no1-site@users.noreply.github.com"
     & $gitExecutable -C $repositoryPath add products.json
@@ -73,7 +90,7 @@ try {
     else {
         $japanTimeZone = [TimeZoneInfo]::FindSystemTimeZoneById("Tokyo Standard Time")
         $japanNow = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $japanTimeZone)
-        $commitMessage = "Update Rakuten products " + $japanNow.ToString("yyyy-MM-dd HH:mm")
+        $commitMessage = "Update market products " + $japanNow.ToString("yyyy-MM-dd HH:mm")
 
         & $gitExecutable -C $repositoryPath commit -m $commitMessage |
             Tee-Object -FilePath $logPath -Append
@@ -99,6 +116,8 @@ finally {
     Remove-Item Env:RAKUTEN_ACCESS_KEY -ErrorAction SilentlyContinue
     Remove-Item Env:RAKUTEN_AFFILIATE_ID -ErrorAction SilentlyContinue
     Remove-Item Env:RAKUTEN_HISTORY_PATH -ErrorAction SilentlyContinue
+    Remove-Item Env:YAHOO_CLIENT_ID -ErrorAction SilentlyContinue
+    Remove-Item Env:YAHOO_AFFILIATE_ID -ErrorAction SilentlyContinue
 
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName
