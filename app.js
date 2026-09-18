@@ -143,8 +143,19 @@ function updateSignal() {
       Number(item?.collection_summary?.yahoo?.added_offers || 0) > 0 ||
       item?.offers?.some?.(offer => offer?.marketplace_code === "yahoo")
     );
+    const amazonActive = deals.some(item =>
+      Number(item?.collection_summary?.keepa?.added_offers || 0) > 0 ||
+      item?.offers?.some?.(offer => offer?.marketplace_code === "amazon")
+    );
+    const marketplaces = [
+      "楽天市場",
+      ...(yahooActive ? ["Yahoo!ショッピング"] : []),
+      ...(amazonActive ? ["Amazon.co.jp"] : [])
+    ];
     headingElement.textContent = comparedDeals.length
-      ? yahooActive ? "楽天市場・Yahoo!ショッピングの価格比較" : "楽天市場のショップ別価格比較"
+      ? marketplaces.length === 1
+        ? `${marketplaces[0]}のショップ別価格比較`
+        : `${marketplaces.join("・")}の価格比較`
       : "参考商品（比較条件未確認）";
   }
 
@@ -351,7 +362,7 @@ function render(filter) {
 
           <p class="why">
             ${escapeHTML(reason)}<br>
-            送料の加算・ポイント・クーポンは比較価格に未反映です。
+            ポイント・クーポン等は比較価格に未反映です。配送先や会員条件などで支払額が変わる場合があります。
           </p>
 
           ${compared ? renderShopTable(item) : ""}

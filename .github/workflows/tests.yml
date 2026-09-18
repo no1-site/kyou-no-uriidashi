@@ -1,0 +1,25 @@
+name: 比較ロジックテスト
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ファイルを取得
+        uses: actions/checkout@v6
+
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 比較ロジックをテスト
+        run: node --test scripts/tests/*.test.mjs
