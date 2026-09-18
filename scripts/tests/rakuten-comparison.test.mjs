@@ -293,6 +293,9 @@ test("UI shows shop links at equal prices, escapes labels and marks legacy data 
   assert.match(nodes.get("#dealGrid").innerHTML, /https:\/\/example.com\/one/);
   assert.match(nodes.get("#dealGrid").innerHTML, /&lt;img/);
   assert.doesNotMatch(nodes.get("#dealGrid").innerHTML, /0%低い/);
+  assert.match(nodes.get("#dealGrid").innerHTML, /Amazonで価格を確認/);
+  assert.match(nodes.get("#dealGrid").innerHTML, /amazon\.co\.jp\/s\?k=/);
+  assert.match(nodes.get("#dealGrid").innerHTML, /Amazonの価格は現在の比較・スコアには含めていません/);
   assert.match(nodes.get("#dealHeading").textContent, /ショップ別/);
   const mixed = buildComparison(identity, [item("cheap", 100, { postageFlag: 1 }), item("one", 800), item("two", 1200)]).product;
   context.mixedProduct = mixed;
