@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 import { productIdentity, validJAN, matchOffer, buildComparison, validationVersion } from "../lib/rakuten-comparison.mjs";
 import { selectionExclusion, selectionVersion } from "../lib/product-selection.mjs";
+import { effectivePostage, canRankPriceOffers, postageLabel, applyShippingPolicy, shippingPolicyVersion } from "../../shipping-policy.mjs";
 
 const catalog = {
   productId: "soap", productCode: "4901234567894", productName: "テスト社 洗剤 500ml",
@@ -35,7 +36,7 @@ function item(shop = "one", price = 1000, overrides = {}) {
   return {
     itemCode: `${shop}:soap`, shopCode: shop, shopName: `${shop}店`,
     itemName: "テスト社 洗剤 500ml", itemCaption: "JANコード：4901234567894",
-    itemPrice: price, availability: 1, taxFlag: 0, postageFlag: 1,
+    itemPrice: price, availability: 1, taxFlag: 0, postageFlag: 0,
     itemUrl: `https://example.com/${shop}`, reviewAverage: 4.2, reviewCount: 100,
     ...overrides
   };
@@ -136,10 +137,41 @@ test("model matching keeps brand, full suffix and capacity significant", () => {
 });
 
 test("equal prices are still a completed comparison; postage stays separate", () => {
-  const { product } = buildComparison(identity, [item("one", 1000, { postageFlag: 0 }), item("two", 1000)]);
-  assert.equal(product.discount_percent, 0);
-  assert.equal(product.deal_label, "ショップ比較済み");
+  const { product } = buildComparison(identity, [item("one", 1000, { postageFlag: 0 }), item("two", 1000, { postageFlag: 1 })]);
+  assert.equal(product.discount_percent, null);
+  assert.equal(product.score, null);
+  assert.equal(product.deal_label, "送料確認が必要");
   assert.deepEqual(product.offers.map(o => o.postage), ["included", "extra"]);
+});
+
+test("shipping flag mapping follows output definitions; conflicts and conditions stay unknown", () => {
+  for (const [flag, expected] of [[0, "included"], ["0", "included"], [1, "extra"], ["1", "extra"], [null, "unknown"], [undefined, "unknown"], [true, "unknown"]]) {
+    assert.equal(matchOffer(identity, item("one", 1000, { postageFlag: flag })).offer.postage, expected);
+  }
+  for (const offer of [
+    { postage: "extra", item_name: "送料無料 洗剤" },
+    { postage: "included", item_name: "洗剤 送料都度見積" },
+    { postage: "included", item_name: "洗剤 3980円以上で送料無料" },
+    { postage: "included", item_name: "送料無料 北海道は別途送料" }
+  ]) assert.equal(effectivePostage(offer), "unknown");
+  assert.equal(postageLabel({ postage: "included" }), "送料込み表示");
+});
+
+test("unknown or extra postage never produces a price advantage or history score", () => {
+  for (const flag of [1, null]) {
+    const p = buildComparison(identity, [item("one", 419, { postageFlag: flag }), item("two", 628)]).product;
+    assert.equal(p.offers.length, 2);
+    assert.equal(p.score, null);
+    assert.equal(p.discount_percent, null);
+    assert.equal(p.shipping_comparison, "price_only");
+    assert.equal(p.historical_price, null);
+  }
+  const p = buildComparison(identity, [item("one", 800), item("two", 1000)]).product;
+  assert.ok(canRankPriceOffers(p.offers));
+  assert.ok(p.score > 0);
+  assert.equal(p.shipping_comparison, "included");
+  const legacy = { ...p, shipping_policy_version: undefined, historical_price: 9999, historical_discount_percent: 90 };
+  assert.equal(applyShippingPolicy(legacy).historical_price, null);
 });
 
 test("history excludes today and stale records and requires two distinct prior days", () => {
@@ -149,9 +181,14 @@ test("history excludes today and stale records and requires two distinct prior d
     { date: "2026-09-17", price: 5000, checked_at: "2026-09-17T00:00:00Z" },
     { date: "2025-01-01", price: 99999, checked_at: "2025-01-01T00:00:00Z" }
   ] } };
-  for (const entry of history.products[identity.id]) entry.validation_version = validationVersion;
+  for (const entry of history.products[identity.id]) {
+    entry.validation_version = validationVersion;
+    entry.shipping_policy_version = shippingPolicyVersion;
+  }
   const { product } = buildComparison(identity, [item("one", 800), item("two", 1000)], { history, checkedAt: "2026-09-17T01:00:00Z" });
   assert.equal(product.historical_price, 1200);
+  for (const entry of history.products[identity.id]) delete entry.shipping_policy_version;
+  assert.equal(buildComparison(identity, [item("one", 800), item("two", 1000)], { history, checkedAt: "2026-09-17T01:00:00Z" }).product.historical_price, null);
   for (const entry of history.products[identity.id]) delete entry.validation_version;
   assert.equal(buildComparison(identity, [item("one", 800), item("two", 1000)], { history, checkedAt: "2026-09-17T01:00:00Z" }).product.historical_price, null);
 });
@@ -173,6 +210,7 @@ test("pipeline produces 12 comparisons with null catalog averages and publishes 
   assert.ok(products.every(p => p.validation_version === validationVersion));
   const history = JSON.parse(await readFile(join(directory, "history.json"), "utf8"));
   assert.ok(Object.values(history.products).flat().every(entry => entry.validation_version === validationVersion));
+  assert.ok(Object.values(history.products).flat().every(entry => entry.shipping_policy_version === shippingPolicyVersion));
   assert.ok(!content.includes("private-test"));
   assert.ok(!result.stdout.includes("private-test"));
 });
@@ -214,10 +252,12 @@ test("irrelevant catalog results do not consume the eight comparison candidate s
 
 test("UI shows shop links at equal prices, escapes labels and marks legacy data unconfirmed", async () => {
   const nodes = new Map(["#dealGrid", "#signalScore", "#signalLabel", "#signalText", "#dealHeading", "#updated"].map(id => [id, { textContent: "", innerHTML: "", addEventListener() {} }]));
-  const context = vm.createContext({ URL, console, document: {
+  const context = vm.createContext({ URL, console, canRankPriceOffers, postageLabel, shippingPolicyVersion, document: {
     querySelector: id => nodes.get(id), querySelectorAll: () => []
   }, window: {} });
-  const source = (await readFile(new URL("../../app.js", import.meta.url), "utf8")).replace(/loadDeals\(\);\s*$/, "");
+  const source = (await readFile(new URL("../../app.js", import.meta.url), "utf8"))
+    .replace(/^import .*shipping-policy.*;\s*\n/m, "")
+    .replace(/loadDeals\(\);\s*$/, "");
   vm.runInContext(source, context);
   const product = buildComparison(identity, [item("one", 1000, { shopName: "<img src=x onerror=alert(1)>" }), item("two", 1000)]).product;
   context.testProduct = product;
@@ -227,6 +267,16 @@ test("UI shows shop links at equal prices, escapes labels and marks legacy data 
   assert.match(nodes.get("#dealGrid").innerHTML, /&lt;img/);
   assert.doesNotMatch(nodes.get("#dealGrid").innerHTML, /0%低い/);
   assert.match(nodes.get("#dealHeading").textContent, /ショップ別/);
+  product.offers[0].postage = "extra";
+  product.discount_percent = 80;
+  product.historical_discount_percent = 99;
+  vm.runInContext("deals = [testProduct]; render('all'); updateSignal();", context);
+  assert.equal(nodes.get("#signalScore").textContent, "--");
+  assert.match(nodes.get("#dealGrid").innerHTML, /送料確認が必要/);
+  assert.match(nodes.get("#dealGrid").innerHTML, /別途送料/);
+  assert.match(nodes.get("#dealGrid").innerHTML, /offer-table/);
+  assert.doesNotMatch(nodes.get("#dealGrid").innerHTML, /80%|99%|比較2店の平均|最安商品/);
+  product.offers[0].postage = "included";
   product.market_price = 8111;
   product.discount_percent = 94;
   product.historical_discount_percent = 99;

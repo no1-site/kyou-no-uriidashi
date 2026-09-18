@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildComparison, productIdentity, positiveNumber, getItemImage, httpsURL, validationVersion } from "./lib/rakuten-comparison.mjs";
 import { selectionExclusion, selectionVersion } from "./lib/product-selection.mjs";
+import { canRankPriceOffers, shippingPolicyVersion } from "../shipping-policy.mjs";
 
 const applicationId = process.env.RAKUTEN_APPLICATION_ID;
 const accessKey = process.env.RAKUTEN_ACCESS_KEY;
@@ -197,9 +198,9 @@ async function saveHistory(history, products) {
     if (retained.length) history.products[key] = retained;
     else delete history.products[key];
   }
-  for (const product of products.filter(item => item.comparison_type === "rakuten_shops")) {
+  for (const product of products.filter(item => item.comparison_type === "rakuten_shops" && canRankPriceOffers(item.offers))) {
     const entries = (history.products[product.id] || []).filter(entry => entry.date !== japanDate);
-    entries.push({ date: japanDate, price: product.price, average_price: product.market_price, checked_at: checkedAt, validation_version: validationVersion });
+    entries.push({ date: japanDate, price: product.price, average_price: product.market_price, checked_at: checkedAt, validation_version: validationVersion, shipping_policy_version: shippingPolicyVersion });
     history.products[product.id] = entries.slice(-120);
   }
   history.updated_at = checkedAt;
@@ -223,9 +224,13 @@ products.sort((a, b) => Number(b.comparison_type === "rakuten_shops") - Number(a
 const comparedCount = products.filter(product => product.comparison_type === "rakuten_shops").length;
 summary.compared = comparedCount;
 summary.reference_only = products.length - comparedCount;
+summary.shipping_policy_version = shippingPolicyVersion;
+summary.shipping_included_compared = products.filter(p => p.shipping_comparison === "included").length;
+summary.shipping_price_only = products.filter(p => p.shipping_comparison === "price_only").length;
 // Aggregate diagnostics travel with the normal products.json update. No raw responses.
 products[0].collection_summary = summary;
 await saveHistory(history, products);
 await atomicJSON(outputPath, products);
 console.log(`[PRICE RESULT] compared=${comparedCount} reference_only=${summary.reference_only}`);
+console.log(`[SHIPPING RESULT] included=${summary.shipping_included_compared} price_only=${summary.shipping_price_only}`);
 if (!comparedCount) console.log("[NOTICE] Product update finished, but no shop comparison was confirmed. Check collection_summary.");

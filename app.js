@@ -1,3 +1,5 @@
+import { canRankPriceOffers, postageLabel, shippingPolicyVersion } from "./shipping-policy.mjs?v=shipping1";
+
 const emoji = {
   "家電": "⚡",
   "ホビー": "🎮",
@@ -71,6 +73,21 @@ function comparisonHoldReason(item) {
   return "";
 }
 
+function canScore(item) {
+  return hasPriceComparison(item) && item.shipping_policy_version === shippingPolicyVersion &&
+    canRankPriceOffers(comparisonOffers(item));
+}
+
+function scoreValue(item) {
+  return canScore(item) && item.score !== null && item.score !== undefined && Number.isFinite(Number(item.score)) ? Number(item.score) : NaN;
+}
+
+function shippingMessage(item) {
+  return canScore(item)
+    ? "送料込み表示の各店を比較しています。配送先などの適用条件は購入前に確認してください。"
+    : "送料が別途かかる場合や条件が未確認のため、安さの判定は保留しています。支払総額の順位ではありません。";
+}
+
 function comparisonOffers(item) {
   if (!Array.isArray(item.offers)) return [];
   const shops = new Map();
@@ -95,10 +112,10 @@ function renderShopTable(item) {
           rel="sponsored nofollow noopener noreferrer" data-product-name="${escapeHTML(item.name)}"
           data-product-category="${escapeHTML(item.category)}">${escapeHTML(offer.shop_name)}</a></th>
         <td>${formatPrice(offer.price)}</td>
-        <td>${offer.postage === "included" ? "送料込み" : offer.postage === "extra" ? "送料別" : "未確認"}</td>
+        <td>${postageLabel(offer)}</td>
       </tr>`).join("")}</tbody>
     </table></div>
-    <p class="offer-note">送料込みの表示も配送先などで条件が変わる場合があります。</p>
+    <p class="offer-note">商品価格の低い順です。送料・配送先の条件で支払総額は変わる場合があります。</p>
   </div>`;
 }
 
@@ -110,7 +127,7 @@ function updateSignal() {
   if (!scoreElement || !labelElement || !textElement) return;
 
   const comparedDeals = deals.filter(hasPriceComparison);
-  const top = comparedDeals[0] || deals[0];
+  const top = comparedDeals.find(canScore) || comparedDeals[0] || deals[0];
 
   if (headingElement) {
     headingElement.textContent = comparedDeals.length
@@ -125,19 +142,19 @@ function updateSignal() {
     return;
   }
 
-  const score = hasPriceComparison(top) ? Number(top.score) : NaN;
+  const score = scoreValue(top);
   scoreElement.textContent = Number.isFinite(score)
     ? String(Math.round(score))
     : "--";
-  labelElement.textContent = hasPriceComparison(top) ? top.deal_label || "ショップ比較済み" : "比較条件未確認";
+  labelElement.textContent = hasPriceComparison(top) ? canScore(top) ? "送料込み表示の店を比較" : "送料確認が必要" : "比較条件未確認";
 
   if (hasPriceComparison(top)) {
     const offerCount = comparisonOffers(top).length;
     const discount = Math.max(0, Math.floor(Number(top.discount_percent) || 0));
     textElement.textContent =
-      discount > 0
-        ? `確認した${offerCount}ショップの商品価格を比較。比較店の平均より${discount}%低い価格です。`
-        : `確認した${offerCount}ショップの商品価格を比較しています。`;
+      canScore(top) && discount > 0
+        ? `送料込み表示の${offerCount}ショップの平均より${discount}%低い商品価格です。配送先などの条件は各店で確認してください。`
+        : shippingMessage(top);
   }
   else {
     textElement.textContent =
@@ -168,7 +185,8 @@ async function loadDeals() {
       .filter(item => item && typeof item.name === "string")
       .sort((a, b) =>
         Number(hasPriceComparison(b)) - Number(hasPriceComparison(a)) ||
-        Number(b.score || 0) - Number(a.score || 0) ||
+        Number(canScore(b)) - Number(canScore(a)) ||
+        (scoreValue(b) || 0) - (scoreValue(a) || 0) ||
         Number(b.review_count || 0) - Number(a.review_count || 0)
       );
 
@@ -222,6 +240,7 @@ function render(filter) {
     const productURL = safeURL(item.best_url);
     const isSample = item.name.startsWith("サンプル");
     const compared = hasPriceComparison(item);
+    const scored = canScore(item);
 
     const average = Number(item.review_average);
     const count = Number(item.review_count);
@@ -236,18 +255,18 @@ function render(filter) {
       : "レビュー情報なし";
 
     const offerCount = comparisonOffers(item).length;
-    const discount = compared
+    const discount = scored
       ? Math.round(Number(item.discount_percent))
       : null;
     const historicalDiscount = validPositiveNumber(
       item.historical_discount_percent
     );
-    const score = compared ? Number(item.score) : NaN;
+    const score = scoreValue(item);
     const scoreText = Number.isFinite(score)
       ? `${Math.round(score)}/100`
       : "—";
     const scoreLabel = compared
-      ? item.deal_label || "お買い得スコア"
+      ? scored ? "送料込み表示の店を比較" : "送料確認が必要"
       : "比較条件未確認";
 
     const visual = imageURL
@@ -268,21 +287,21 @@ function render(filter) {
           rel="sponsored nofollow noopener noreferrer"
           data-product-name="${escapeHTML(item.name)}"
           data-product-category="${escapeHTML(item.category)}"
-        >${compared ? "比較店の最安商品を見る" : "楽天市場で見る"}</a>`
+        >${compared ? "ショップで送料・条件を確認" : "楽天市場で見る"}</a>`
       : "<span>実商品への切り替え準備中</span>";
 
     const comparisonBadges = compared
       ? `
-          ${discount > 0 ? `<span class="badge hot">比較店平均より${discount}%低い</span>` : `<span class="badge">商品価格の差は小さめ</span>`}
+          ${!scored ? `<span class="badge">送料確認が必要</span>` : discount > 0 ? `<span class="badge hot">送料込み表示の店の平均より${discount}%低い</span>` : `<span class="badge">商品価格の差は小さめ</span>`}
           <span class="badge">${offerCount}ショップ比較</span>
         `
       : `<span class="badge">参考商品・比較条件未確認</span>`;
 
-    const historyBadge = compared && historicalDiscount
+    const historyBadge = scored && historicalDiscount
       ? `<span class="badge">過去の記録価格より${Math.round(historicalDiscount)}%低い</span>`
       : "";
 
-    const reason = comparisonHoldReason(item) || (typeof item.reason === "string" && item.reason.trim()
+    const reason = comparisonHoldReason(item) || (compared ? shippingMessage(item) : typeof item.reason === "string" && item.reason.trim()
       ? item.reason
       : "取得時点の商品情報を掲載しています。");
 
@@ -300,10 +319,10 @@ function render(filter) {
           <h3>${escapeHTML(item.name)}</h3>
 
           <div class="price-line">
-            ${compared ? `<span class="price-caption">確認したショップ内の最安商品価格（税込）</span>` : ""}
+            ${compared ? `<span class="price-caption">掲載店の商品価格の最小値（税込・${postageLabel(comparisonOffers(item)[0])}）</span>` : ""}
             <span class="price">${formatPrice(item.price)}</span>
             ${
-              compared
+              scored
                 ? `<span class="market">比較${offerCount}店の平均 ${formatPrice(item.market_price)}</span>`
                 : ""
             }

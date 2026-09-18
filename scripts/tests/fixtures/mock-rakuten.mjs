@@ -27,7 +27,7 @@ globalThis.fetch = async input => {
   const items = ["one", "two", "one"].map((shop, i) => ({
     itemCode: `${shop}:${keyword}-${i}`, shopCode: shop, shopName: `${shop}店`, itemName: `テスト製品`,
     itemCaption: isMatch ? `JAN: ${keyword}` : "識別情報なし", itemPrice: [800, 1200, 900][i],
-    taxFlag: 0, availability: 1, postageFlag: 1, itemUrl: `https://example.com/${shop}/${keyword}/${i}`
+    taxFlag: 0, availability: 1, postageFlag: 0, itemUrl: `https://example.com/${shop}/${keyword}/${i}`
   }));
   // Fallback must not reintroduce accessories or related media rejected above.
   const index = keywords.indexOf(keyword);

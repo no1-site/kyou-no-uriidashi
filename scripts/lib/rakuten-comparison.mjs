@@ -1,4 +1,5 @@
 // Pure matching and comparison rules. No credentials, network or file access.
+import { applyShippingPolicy, shippingPolicyVersion } from "../../shipping-policy.mjs";
 export const validationVersion = "quantity-v2";
 export function normalizeText(value) {
   return String(value ?? "").normalize("NFKC")
@@ -235,12 +236,11 @@ export function buildComparison(identity, items, { history = { products: {} }, c
   }
   const lowest = offers[0];
   const average = offers.reduce((sum, offer) => sum + offer.price, 0) / offers.length;
-  const discount = percentageBelow(lowest.price, average);
   const today = new Date(Date.parse(checkedAt) + 9 * 3600000).toISOString().slice(0, 10);
   const days = new Map();
   const previous = history.products?.[identity.id];
   for (const entry of Array.isArray(previous) ? previous : []) {
-    if (!entry || entry.validation_version !== validationVersion || typeof entry.date !== "string") continue;
+    if (!entry || entry.validation_version !== validationVersion || entry.shipping_policy_version !== shippingPolicyVersion || typeof entry.date !== "string") continue;
     const timestamp = Date.parse(entry.checked_at);
     if (entry.date !== today && timestamp < Date.parse(checkedAt) && timestamp >= Date.parse(checkedAt) - 120 * 86400000 && positiveNumber(entry.price)) {
       days.set(entry.date, entry.price);
@@ -248,23 +248,19 @@ export function buildComparison(identity, items, { history = { products: {} }, c
   }
   const historicalPrice = days.size >= 2 ? Math.round(median([...days.values()])) : null;
   const historicalDiscount = historicalPrice ? percentageBelow(lowest.price, historicalPrice) : 0;
-  const score = Math.min(100, Math.round(30 + Math.min(40, discount * 2) +
-    Math.min(10, historicalDiscount) + Math.min(10, Math.log2(offers.length + 1) * 2.5) +
-    lowest.review_average / 5 * 7 + Math.min(3, Math.log10(lowest.review_count + 1))));
-  return { rejected, matchedShops: offers.length, product: {
+  return { rejected, matchedShops: offers.length, product: applyShippingPolicy({
     id: identity.id, product_id: identity.product_id || null,
     product_code: identity.jan || null, model: identity.model || null,
     name: identity.name, category: identity.category, shop: lowest.shop_name,
-    price: lowest.price, market_price: Math.round(average), discount_percent: discount,
+    price: lowest.price, market_price: Math.round(average),
     historical_price: historicalPrice, historical_discount_percent: historicalDiscount || null,
     offer_count: offers.length, offers,
-    score, deal_label: discount >= 15 ? "ショップ間の価格差大" : discount > 0 ? "ショップ間の価格差あり" : "ショップ比較済み",
-    reason: `確認した${offers.length}ショップの商品価格を比較。同じ店の重複出品は1件にまとめています。楽天全体の最安値・平均価格を保証するものではありません。`,
     best_url: lowest.url, compare_url: identity.compare_url,
     image_url: identity.image_url || lowest.image_url,
     review_average: lowest.review_average, review_count: lowest.review_count,
     comparison_type: "rakuten_shops", comparison_basis: "listed_price_tax_included",
     validation_version: validationVersion,
+    shipping_policy_version: shippingPolicyVersion,
     checked_at: checkedAt
-  } };
+  }) };
 }
