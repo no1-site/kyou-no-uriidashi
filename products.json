@@ -129,11 +129,11 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z",
+    "checked_at": "2026-09-18T01:10:04.651Z",
     "collection_summary": {
       "version": "shop-comparison-v1",
-      "checked_at": "2026-09-18T01:05:41.445Z",
-      "requests": 46,
+      "checked_at": "2026-09-18T01:10:04.651Z",
+      "requests": 44,
       "errors": {},
       "categories": [
         {
@@ -156,45 +156,48 @@
         {
           "category": "ホビー",
           "catalog_rows": 60,
-          "identities": 57,
+          "identities": 56,
           "attempted": 5,
           "listing_rows": 43,
           "compared": 2,
           "insufficient_shops": 3,
           "excluded": {
             "accessory_or_variant": 5,
-            "variant_or_bundle": 1,
             "identity_unconfirmed": 9,
+            "variant_or_bundle": 1,
             "condition": 11
           }
         },
         {
           "category": "美容",
           "catalog_rows": 60,
-          "identities": 56,
+          "identities": 58,
           "attempted": 8,
-          "listing_rows": 57,
-          "compared": 1,
-          "insufficient_shops": 7,
+          "listing_rows": 82,
+          "compared": 2,
+          "insufficient_shops": 6,
           "excluded": {
-            "identity_unconfirmed": 26,
-            "variant_or_bundle": 20,
-            "quantity_mismatch": 5
+            "identity_unconfirmed": 37,
+            "variant_or_bundle": 27,
+            "quantity_mismatch": 5,
+            "condition": 2,
+            "unavailable": 1
           }
         },
         {
           "category": "食品",
           "catalog_rows": 60,
-          "identities": 43,
-          "attempted": 8,
-          "listing_rows": 76,
-          "compared": 1,
-          "insufficient_shops": 7,
+          "identities": 42,
+          "attempted": 6,
+          "listing_rows": 103,
+          "compared": 2,
+          "insufficient_shops": 4,
           "excluded": {
-            "variant_or_bundle": 37,
-            "quantity_mismatch": 12,
-            "identity_unconfirmed": 21,
-            "condition": 2
+            "variant_or_bundle": 50,
+            "quantity_mismatch": 19,
+            "identity_unconfirmed": 23,
+            "condition": 3,
+            "accessory_or_variant": 1
           }
         },
         {
@@ -231,7 +234,7 @@
           }
         }
       ],
-      "compared": 10,
+      "compared": 12,
       "reference_only": 0
     }
   },
@@ -313,7 +316,74 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
+  },
+  {
+    "id": "rakuten_shops:jan:4904070074328",
+    "product_id": "23f758a9ad4bfc2696cf3e351033ba7d",
+    "product_code": "4904070074328",
+    "model": null,
+    "name": "日本盛 日本酒の超しっとり化粧水A(500ml)",
+    "category": "美容",
+    "shop": "姫路流通センター",
+    "price": 753,
+    "market_price": 1044,
+    "discount_percent": 27,
+    "historical_price": null,
+    "historical_discount_percent": null,
+    "offer_count": 3,
+    "offers": [
+      {
+        "shop_code": "at-life",
+        "shop_name": "姫路流通センター",
+        "item_code": "at-life:12546322",
+        "item_name": "日本盛 日本酒の超しっとり化粧水 500ml ポンプ ローション　本体（4904070074328）※パッケージ変更の場合あり",
+        "price": 753,
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00ru0oo.aif91078.g00ru0oo.aif92f33/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fat-life%2F4904070074328%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fat-life%2Fi%2F12546322%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+        "postage": "extra",
+        "match_method": "jan",
+        "review_average": 0,
+        "review_count": 0,
+        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/at-life/cabinet/2024a/4904070074328.jpg?_ex=128x128"
+      },
+      {
+        "shop_code": "cosmedefun",
+        "shop_name": "COSME DE FUN",
+        "item_code": "cosmedefun:10016497",
+        "item_name": "日本盛 日本酒の超しっとり化粧水 ポンプ ローション 500mL [4904070074328] 日本酒配合 化粧水 乳酸菌 レチノール誘導体 ナイアシンアミド フェイス ボディ コメ発酵液 無香料 無着色 弱酸性 スキンローション フェイスローション",
+        "price": 1060,
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00s7yro.aif91510.g00s7yro.aif92585/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fcosmedefun%2F10007185%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fcosmedefun%2Fi%2F10016497%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+        "postage": "extra",
+        "match_method": "jan",
+        "review_average": 0,
+        "review_count": 0,
+        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/cosmedefun/cabinet/09733564/4904070074328.jpg?_ex=128x128"
+      },
+      {
+        "shop_code": "kusurinokiyoshi",
+        "shop_name": "薬のきよし",
+        "item_code": "kusurinokiyoshi:10021825",
+        "item_name": "【送料無料】日本盛 日本酒の超しっとり化粧水 500ml ポンプ ローション 本体 4904070074328",
+        "price": 1320,
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00qd6jo.aif91dab.g00qd6jo.aif92eba/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fkusurinokiyoshi%2F4904070074328%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fkusurinokiyoshi%2Fi%2F10021825%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+        "postage": "extra",
+        "match_method": "jan",
+        "review_average": 0,
+        "review_count": 0,
+        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/kusurinokiyoshi/cabinet/imgrc0109369050.jpg?_ex=128x128"
+      }
+    ],
+    "score": 75,
+    "deal_label": "ショップ間の価格差大",
+    "reason": "確認した3ショップの商品価格を比較。同じ店の重複出品は1件にまとめています。楽天全体の最安値・平均価格を保証するものではありません。",
+    "best_url": "https://hb.afl.rakuten.co.jp/hgc/g00ru0oo.aif91078.g00ru0oo.aif92f33/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fat-life%2F4904070074328%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fat-life%2Fi%2F12546322%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+    "compare_url": "https://hb.afl.rakuten.co.jp/hgc/g000001o.aif9149c.g000001o.aif92320/?pc=https%3A%2F%2Fproduct.rakuten.co.jp%2Fproduct%2F-%2F23f758a9ad4bfc2696cf3e351033ba7d%2F&m=http%3A%2F%2Fm.product.rakuten.co.jp%2Fproduct%2F23f758a9ad4bfc2696cf3e351033ba7d%2F&rafcid=wsc_i_ps_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+    "image_url": "https://r.r10s.jp/g/gran_img/ko/PFB/E19/FPM/AAJ/edbfefc34b2ffd7c8f026e575968a4a9.jpg?_ex=128x128",
+    "review_average": 0,
+    "review_count": 0,
+    "comparison_type": "rakuten_shops",
+    "comparison_basis": "listed_price_tax_included",
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4970941518598",
@@ -380,7 +450,74 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
+  },
+  {
+    "id": "rakuten_shops:jan:4531717311036",
+    "product_id": "4c9ad464a889b3eae649163484411f3c",
+    "product_code": "4531717311036",
+    "model": "1FMR31103BC",
+    "name": "マジックライス ななこめっつ 青菜ご飯(70g)",
+    "category": "食品",
+    "shop": "ウエノ電器 楽天市場店",
+    "price": 419,
+    "market_price": 8111,
+    "discount_percent": 94,
+    "historical_price": null,
+    "historical_discount_percent": null,
+    "offer_count": 3,
+    "offers": [
+      {
+        "shop_code": "u-denki",
+        "shop_name": "ウエノ電器 楽天市場店",
+        "item_code": "u-denki:10053298",
+        "item_name": "マジックライス ななこめっつ 青菜ご飯 1FMR31103BC非常食 保存食 備蓄食 長期保存 アルファ化米 マジックライス サタケ[2609SI]",
+        "price": 419,
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00su2mo.aif919a2.g00su2mo.aif924a5/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fu-denki%2F7353403%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fu-denki%2Fi%2F10053298%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+        "postage": "extra",
+        "match_method": "jan",
+        "review_average": 0,
+        "review_count": 0,
+        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/u-denki/cabinet/tasya175/7353403-p.jpg?_ex=128x128"
+      },
+      {
+        "shop_code": "purpleshadow",
+        "shop_name": "purpleshadow",
+        "item_code": "purpleshadow:10000727",
+        "item_name": "【ポスト投函便発送】サタケ マジックライス ななこめっつ 青菜ごはん 非常食 長期保存 防災 7年間長期保存(70g×1)(4531717311036)",
+        "price": 628,
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00uj2ko.aif917dc.g00uj2ko.aif92180/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fpurpleshadow%2F4531717311036%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fpurpleshadow%2Fi%2F10000727%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+        "postage": "included",
+        "match_method": "jan",
+        "review_average": 0,
+        "review_count": 0,
+        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/purpleshadow/cabinet/11113406/13096628/4531717311036.jpg?_ex=128x128"
+      },
+      {
+        "shop_code": "tukishimado",
+        "shop_name": "【文具の月島堂】楽天市場店",
+        "item_code": "tukishimado:21148313",
+        "item_name": "★ポイント最大16倍★【全国配送可】-マジックライス　ななこめっつ　青菜ご飯 70g サタケ　JAN 4531717311036 kt521108 取寄品 その他 リスクマネジメント 非常食-【介護福祉用具】",
+        "price": 23286,
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00rdtno.aif91ac5.g00rdtno.aif9226a/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ftukishimado%2Fkt521108%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Ftukishimado%2Fi%2F21148313%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+        "postage": "included",
+        "match_method": "jan",
+        "review_average": 0,
+        "review_count": 0,
+        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/tukishimado/cabinet/kt2025/r0104/kt521108.jpg?_ex=128x128"
+      }
+    ],
+    "score": 75,
+    "deal_label": "ショップ間の価格差大",
+    "reason": "確認した3ショップの商品価格を比較。同じ店の重複出品は1件にまとめています。楽天全体の最安値・平均価格を保証するものではありません。",
+    "best_url": "https://hb.afl.rakuten.co.jp/hgc/g00su2mo.aif919a2.g00su2mo.aif924a5/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fu-denki%2F7353403%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fu-denki%2Fi%2F10053298%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+    "compare_url": "https://hb.afl.rakuten.co.jp/hgc/g000001o.aif9149c.g000001o.aif92320/?pc=https%3A%2F%2Fproduct.rakuten.co.jp%2Fproduct%2F-%2F4c9ad464a889b3eae649163484411f3c%2F&m=http%3A%2F%2Fm.product.rakuten.co.jp%2Fproduct%2F4c9ad464a889b3eae649163484411f3c%2F&rafcid=wsc_i_ps_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
+    "image_url": "https://r.r10s.jp/g/gran_img/ko/PEU/UY3/XMW/S67/f9eb3029e967b959f0989c7f1d9131c6.jpg?_ex=128x128",
+    "review_average": 0,
+    "review_count": 0,
+    "comparison_type": "rakuten_shops",
+    "comparison_basis": "listed_price_tax_included",
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4976956116187",
@@ -447,7 +584,7 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4988061868271",
@@ -644,7 +781,7 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4977292489621",
@@ -698,7 +835,7 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4902530908763",
@@ -752,7 +889,7 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4540774405558",
@@ -819,7 +956,7 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:4902397835691",
@@ -899,7 +1036,7 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   },
   {
     "id": "rakuten_shops:jan:0669066991037",
@@ -953,6 +1090,6 @@
     "review_count": 0,
     "comparison_type": "rakuten_shops",
     "comparison_basis": "listed_price_tax_included",
-    "checked_at": "2026-09-18T01:05:41.445Z"
+    "checked_at": "2026-09-18T01:10:04.651Z"
   }
 ]
