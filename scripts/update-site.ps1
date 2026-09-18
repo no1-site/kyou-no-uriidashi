@@ -8,6 +8,7 @@ $repositoryPath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $configDirectory = Join-Path $env:LOCALAPPDATA "KyouNoUriidashi"
 $configPath = Join-Path $configDirectory "rakuten-credentials.xml"
 $yahooConfigPath = Join-Path $configDirectory "yahoo-credentials.xml"
+$keepaConfigPath = Join-Path $configDirectory "keepa-credentials.xml"
 $logPath = Join-Path $configDirectory "update.log"
 
 New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
@@ -54,6 +55,11 @@ try {
         $env:YAHOO_CLIENT_ID = Reveal-SecureValue $yahooSettings.ClientId
     }
 
+    if (Test-Path $keepaConfigPath) {
+        $keepaSettings = Import-Clixml -Path $keepaConfigPath
+        $env:KEEPA_API_KEY = Reveal-SecureValue $keepaSettings.ApiKey
+    }
+
     Write-UpdateLog "Starting update."
 
     & $gitExecutable -C $repositoryPath pull --ff-only |
@@ -77,6 +83,17 @@ try {
     }
     else {
         Write-UpdateLog "Yahoo! Shopping Client ID not configured; skipping Yahoo comparison."
+    }
+
+    if ($env:KEEPA_API_KEY) {
+        & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\\fetch-keepa.mjs") |
+            Tee-Object -FilePath $logPath -Append
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not fetch Amazon.co.jp prices from Keepa."
+        }
+    }
+    else {
+        Write-UpdateLog "Keepa API key not configured; skipping Amazon.co.jp comparison."
     }
 
     & $gitExecutable -C $repositoryPath config user.name "no1-site"
@@ -118,6 +135,8 @@ finally {
     Remove-Item Env:RAKUTEN_HISTORY_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:YAHOO_CLIENT_ID -ErrorAction SilentlyContinue
     Remove-Item Env:YAHOO_AFFILIATE_ID -ErrorAction SilentlyContinue
+    Remove-Item Env:KEEPA_API_KEY -ErrorAction SilentlyContinue
+    Remove-Item Env:AMAZON_ASSOCIATE_TAG -ErrorAction SilentlyContinue
 
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName
