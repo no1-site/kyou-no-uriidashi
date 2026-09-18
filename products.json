@@ -144,7 +144,7 @@
           "identities": 46,
           "attempted": 3,
           "listing_rows": 41,
-          "compared": 2,
+          "compared": 1,
           "insufficient_shops": 1,
           "excluded": {
             "quantity_mismatch": 6,
@@ -160,7 +160,7 @@
           "identities": 57,
           "attempted": 3,
           "listing_rows": 44,
-          "compared": 2,
+          "compared": 1,
           "insufficient_shops": 1,
           "excluded": {
             "identity_unconfirmed": 18,
@@ -236,8 +236,26 @@
           }
         }
       ],
-      "compared": 11,
-      "reference_only": 0
+      "compared": 9,
+      "reference_only": 0,
+      "publication_review": {
+        "selection_version": "main-products-v1",
+        "reviewed_at": "2026-09-18T03:22:32.331Z",
+        "source_commit": "777ffb2a74dcfbde53cee3ce5836395ccbfa7f16",
+        "source_compared": 11,
+        "removed": [
+          {
+            "id": "rakuten_shops:jan:9784866730264",
+            "category": "ホビー",
+            "reason": "related_media"
+          },
+          {
+            "id": "rakuten_shops:jan:4942302193829",
+            "category": "家電",
+            "reason": "appliance_accessory"
+          }
+        ]
+      }
     }
   },
   {
@@ -753,139 +771,6 @@
     "checked_at": "2026-09-18T03:16:27.885Z"
   },
   {
-    "id": "rakuten_shops:jan:9784866730264",
-    "product_id": "07abc03065d3cf23c76e1064886c34a8",
-    "product_code": "9784866730264",
-    "model": null,
-    "name": "非売品ゲームソフトガイドブック",
-    "category": "ホビー",
-    "shop": "楽天ブックス",
-    "price": 1925,
-    "market_price": 1925,
-    "discount_percent": 0,
-    "historical_price": null,
-    "historical_discount_percent": null,
-    "offer_count": 8,
-    "offers": [
-      {
-        "shop_code": "book",
-        "shop_name": "楽天ブックス",
-        "item_code": "book:18984287",
-        "item_name": "非売品ゲームソフトガイドブック （ゲームラボ選書） [ じろのすけ ]",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00q072o.aif915e6.g00q072o.aif92eb4/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F15334104%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fbook%2Fi%2F18984287%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "included",
-        "match_method": "jan",
-        "review_average": 4,
-        "review_count": 2,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/0264/9784866730264.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "bookfan",
-        "shop_name": "bookfan 2号店 楽天市場店",
-        "item_code": "bookfan:12505982",
-        "item_name": "【最大10万Pt当たる！注文5千円以上&エントリー要 9/20~30限定】非売品ゲームソフトガイドブック／じろのすけ",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00rk0po.aif91aff.g00rk0po.aif920de/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbookfan%2Fbk-4866730269%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fbookfan%2Fi%2F12505982%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "included",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/bookfan/cabinet/00791/bk4866730269.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "booxstore",
-        "shop_name": "bookfan 1号店 楽天市場店",
-        "item_code": "booxstore:12795346",
-        "item_name": "【最大10万Pt当たる！注文5千円以上&エントリー要 9/20~30限定】非売品ゲームソフトガイドブック／じろのすけ",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00rd1do.aif91c00.g00rd1do.aif923e4/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbooxstore%2Fbk-4866730269%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fbooxstore%2Fi%2F12795346%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/booxstore/cabinet/00893/bk4866730269.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "dorama",
-        "shop_name": "ドラマ×プリンセスカフェ",
-        "item_code": "dorama:13325688",
-        "item_name": "非売品ゲームソフトガイドブック　じろのすけ/著",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00r00zo.aif91254.g00r00zo.aif92b84/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fdorama%2Fn33714003%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fdorama%2Fi%2F13325688%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/dorama/cabinet/bkimg/2018/001/33714003.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "guruguru-ds",
-        "shop_name": "ポプカル 楽天市場店",
-        "item_code": "guruguru-ds:12106391",
-        "item_name": "非売品ゲームソフトガイドブック",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00r2dio.aif9174b.g00r2dio.aif92167/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fguruguru-ds%2F9784866730264%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fguruguru-ds%2Fi%2F12106391%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/guruguru-ds/cabinet/b/0/264/9784866730264.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "guruguru2",
-        "shop_name": "ぐるぐる王国 楽天市場店",
-        "item_code": "guruguru2:12638570",
-        "item_name": "非売品ゲームソフトガイドブック",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00pvcao.aif91b9e.g00pvcao.aif92a3d/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fguruguru2%2F9784866730264%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fguruguru2%2Fi%2F12638570%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/guruguru2/cabinet/b/0/264/9784866730264.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "mifsoft",
-        "shop_name": "ぐるぐる王国FS 楽天市場店",
-        "item_code": "mifsoft:11165959",
-        "item_name": "非売品ゲームソフトガイドブック",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00tb68o.aif91574.g00tb68o.aif92fbb/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fmifsoft%2F9784866730264%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fmifsoft%2Fi%2F11165959%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/mifsoft/cabinet/b/0/264/9784866730264.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "neowing-r",
-        "shop_name": "ネオウィング 楽天市場店",
-        "item_code": "neowing-r:14003914",
-        "item_name": "非売品ゲームソフトガイドブック[本/雑誌] (ゲームラボ選書) / じろのすけ/著",
-        "price": 1925,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00q63ao.aif91285.g00q63ao.aif92af0/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fneowing-r%2Fneobk-2189034%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fneowing-r%2Fi%2F14003914%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "jan",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/neowing-r/cabinet/item_img_1398/neobk-2189034.jpg?_ex=128x128"
-      }
-    ],
-    "score": 44,
-    "deal_label": "ショップ比較済み",
-    "reason": "確認した8ショップの商品価格を比較。同じ店の重複出品は1件にまとめています。楽天全体の最安値・平均価格を保証するものではありません。",
-    "best_url": "https://hb.afl.rakuten.co.jp/hgc/g00q072o.aif915e6.g00q072o.aif92eb4/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F15334104%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fbook%2Fi%2F18984287%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-    "compare_url": "https://hb.afl.rakuten.co.jp/hgc/g000001o.aif9149c.g000001o.aif92320/?pc=https%3A%2F%2Fproduct.rakuten.co.jp%2Fproduct%2F-%2F07abc03065d3cf23c76e1064886c34a8%2F&m=http%3A%2F%2Fm.product.rakuten.co.jp%2Fproduct%2F07abc03065d3cf23c76e1064886c34a8%2F&rafcid=wsc_i_ps_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-    "image_url": "https://r.r10s.jp/g/gran_img/im/PED/4H7/DNH/LBX/b678b1421d5679007966cf925b355845.jpg?_ex=128x128",
-    "review_average": 4,
-    "review_count": 2,
-    "comparison_type": "rakuten_shops",
-    "comparison_basis": "listed_price_tax_included",
-    "validation_version": "quantity-v2",
-    "checked_at": "2026-09-18T03:16:27.885Z"
-  },
-  {
     "id": "rakuten_shops:jan:4979105500165",
     "product_id": "a77cb8fdc2f01faf2adf88726968a6de",
     "product_code": "4979105500165",
@@ -933,87 +818,6 @@
     "best_url": "https://hb.afl.rakuten.co.jp/hgc/g00riavo.aif91548.g00riavo.aif92bb6/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fasahiprocureace%2F732-4377%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fasahiprocureace%2Fi%2F15672258%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
     "compare_url": "https://hb.afl.rakuten.co.jp/hgc/g000001o.aif9149c.g000001o.aif92320/?pc=https%3A%2F%2Fproduct.rakuten.co.jp%2Fproduct%2F-%2Fa77cb8fdc2f01faf2adf88726968a6de%2F&m=http%3A%2F%2Fm.product.rakuten.co.jp%2Fproduct%2Fa77cb8fdc2f01faf2adf88726968a6de%2F&rafcid=wsc_i_ps_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
     "image_url": "https://r.r10s.jp/g/gran_img/im/PF5/TA0/7BK/IMG/a181cb1701e16617fafe3a1499cf24e5.jpg?_ex=128x128",
-    "review_average": 0,
-    "review_count": 0,
-    "comparison_type": "rakuten_shops",
-    "comparison_basis": "listed_price_tax_included",
-    "validation_version": "quantity-v2",
-    "checked_at": "2026-09-18T03:16:27.885Z"
-  },
-  {
-    "id": "rakuten_shops:jan:4942302193829",
-    "product_id": "0d37fec7d3f9dfd258bb5f7cd9fa2945",
-    "product_code": "4942302193829",
-    "model": "AVV97V-QQ",
-    "name": "ホームテック Panasonic 掃除機 充電式リチウムイオン電池 AVV97V-QQ",
-    "category": "家電",
-    "shop": "小池だより 楽天市場店",
-    "price": 15800,
-    "market_price": 15970,
-    "discount_percent": 1,
-    "historical_price": null,
-    "historical_discount_percent": null,
-    "offer_count": 4,
-    "offers": [
-      {
-        "shop_code": "koike-dayori",
-        "shop_name": "小池だより 楽天市場店",
-        "item_code": "koike-dayori:10000782",
-        "item_name": "パナソニック 掃除機　AVV97V-QQ 充電式リチウムイオン電池 Panasonic",
-        "price": 15800,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00u6sfo.aif9162b.g00u6sfo.aif9266e/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fkoike-dayori%2Favv97v-qq%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fkoike-dayori%2Fi%2F10000782%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "included",
-        "match_method": "model_brand",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/koike-dayori/cabinet/compass1670755189.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "masutakadenki",
-        "shop_name": "増高電機株式会社",
-        "item_code": "masutakadenki:10067342",
-        "item_name": "[例外なし送料込み] パナソニック純正 コードレス掃除機 充電式リチウムイオン電池 AVV97V-QQ",
-        "price": 15840,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00q12xo.aif91fb0.g00q12xo.aif92477/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fmasutakadenki%2Favv97v-qq%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fmasutakadenki%2Fi%2F10067342%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "included",
-        "match_method": "model_brand",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/masutakadenki/cabinet/parts/avv97v-qq.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "partscomstore",
-        "shop_name": "パーツコムストア",
-        "item_code": "partscomstore:10005947",
-        "item_name": "【在庫あり○】パナソニック Panasonic 掃除機 充電式リチウムイオン電池 AVV97V-QQ",
-        "price": 15950,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00td1eo.aif91f73.g00td1eo.aif929ff/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fpartscomstore%2Favv97v-qq%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fpartscomstore%2Fi%2F10005947%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "model_brand",
-        "review_average": 1,
-        "review_count": 1,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/partscomstore/cabinet/shohin01/panasonic/pa002001/avv97v-qq.jpg?_ex=128x128"
-      },
-      {
-        "shop_code": "proshop-shimizu",
-        "shop_name": "プロショップシミズ",
-        "item_code": "proshop-shimizu:10060910",
-        "item_name": "(送料無料・代引不可)パナソニック　AVV97V-QQ　掃除機用充電式リチウムイオン電池 (L)",
-        "price": 16290,
-        "url": "https://hb.afl.rakuten.co.jp/hgc/g00qq5xo.aif911f1.g00qq5xo.aif92fe3/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fproshop-shimizu%2Fpanasonic-avv97v-qq%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fproshop-shimizu%2Fi%2F10060910%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-        "postage": "extra",
-        "match_method": "model_brand",
-        "review_average": 0,
-        "review_count": 0,
-        "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/proshop-shimizu/cabinet/07986876/avv97v-qq_01.jpg?_ex=128x128"
-      }
-    ],
-    "score": 38,
-    "deal_label": "ショップ間の価格差あり",
-    "reason": "確認した4ショップの商品価格を比較。同じ店の重複出品は1件にまとめています。楽天全体の最安値・平均価格を保証するものではありません。",
-    "best_url": "https://hb.afl.rakuten.co.jp/hgc/g00u6sfo.aif9162b.g00u6sfo.aif9266e/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fkoike-dayori%2Favv97v-qq%2F&m=http%3A%2F%2Fm.rakuten.co.jp%2Fkoike-dayori%2Fi%2F10000782%2F&rafcid=wsc_i_is_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-    "compare_url": "https://hb.afl.rakuten.co.jp/hgc/g000001o.aif9149c.g000001o.aif92320/?pc=https%3A%2F%2Fproduct.rakuten.co.jp%2Fproduct%2F-%2F0d37fec7d3f9dfd258bb5f7cd9fa2945%2F&m=http%3A%2F%2Fm.product.rakuten.co.jp%2Fproduct%2F0d37fec7d3f9dfd258bb5f7cd9fa2945%2F&rafcid=wsc_i_ps_f7e2eb02-3a08-48b9-9e2c-5a283d59de37",
-    "image_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/koike-dayori/cabinet/compass1670755189.jpg?_ex=128x128",
     "review_average": 0,
     "review_count": 0,
     "comparison_type": "rakuten_shops",

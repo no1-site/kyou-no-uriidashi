@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildComparison, productIdentity, positiveNumber, getItemImage, httpsURL, validationVersion } from "./lib/rakuten-comparison.mjs";
+import { selectionExclusion, selectionVersion } from "./lib/product-selection.mjs";
 
 const applicationId = process.env.RAKUTEN_APPLICATION_ID;
 const accessKey = process.env.RAKUTEN_ACCESS_KEY;
@@ -26,7 +27,7 @@ const searches = [
   { category: "ペット", keywords: ["ドッグフード", "キャットフード"] },
   { category: "日用品", keywords: ["洗濯洗剤", "トイレットペーパー"] }
 ];
-const summary = { version: "shop-comparison-v2", validation_version: validationVersion, checked_at: checkedAt, requests: 0, errors: {}, categories: [] };
+const summary = { version: "shop-comparison-v2", validation_version: validationVersion, selection_version: selectionVersion, checked_at: checkedAt, requests: 0, errors: {}, categories: [] };
 const shopSearchCache = new Map();
 
 function sleep(ms) {
@@ -107,7 +108,8 @@ async function discover(search, diagnostics) {
       const rows = await request("product", { keyword, hits: 30, sort: "standard" });
       diagnostics.catalog_rows += rows.length;
       // Catalog is used for identity only; prices come from individual listings.
-      lists.push(rows.map(row => productIdentity(row, search.category)).filter(Boolean));
+      lists.push(rows.filter(row => eligibleSelection(row.productName, search.category, diagnostics))
+        .map(row => productIdentity(row, search.category)).filter(Boolean));
     } catch (error) { recordError(error); }
   }
   const unique = new Map();
@@ -120,6 +122,13 @@ async function discover(search, diagnostics) {
   }
   diagnostics.identities = unique.size;
   return [...unique.values()];
+}
+
+function eligibleSelection(name, category, diagnostics) {
+  const reason = selectionExclusion(name, category);
+  if (!reason) return true;
+  diagnostics.selection_excluded[reason] = (diagnostics.selection_excluded[reason] || 0) + 1;
+  return false;
 }
 
 async function listingSearch(keyword) {
@@ -162,12 +171,12 @@ async function compareCategory(search, history, diagnostics) {
   return products;
 }
 
-async function popularFallback(search) {
+async function popularFallback(search, diagnostics) {
   try {
     const rows = await request("item", {
       keyword: search.keywords[0], hits: 10, sort: "-reviewCount", availability: 1, purchaseType: 0
     });
-    return rows.filter(item => item.itemName && positiveNumber(item.itemPrice) && httpsURL(item.affiliateUrl || item.itemUrl))
+    return rows.filter(item => eligibleSelection(item.itemName, search.category, diagnostics) && positiveNumber(item.itemPrice) && httpsURL(item.affiliateUrl || item.itemUrl))
       .slice(0, 2).map(item => ({
         id: item.itemCode || item.itemUrl, name: item.itemName, category: search.category,
         shop: item.shopName || "楽天市場", price: positiveNumber(item.itemPrice),
@@ -203,11 +212,11 @@ console.log("[SHOP COMPARISON] Starting. This may take a few minutes.");
 for (const search of searches) {
   const diagnostics = {
     category: search.category, catalog_rows: 0, identities: 0, attempted: 0,
-    listing_rows: 0, compared: 0, insufficient_shops: 0, excluded: {}
+    listing_rows: 0, compared: 0, insufficient_shops: 0, excluded: {}, selection_excluded: {}
   };
   const compared = await compareCategory(search, history, diagnostics);
   summary.categories.push(diagnostics);
-  products.push(...(compared.length ? compared : await popularFallback(search)));
+  products.push(...(compared.length ? compared : await popularFallback(search, diagnostics)));
 }
 if (!products.length) throw new Error("No products fetched. Existing product data has been kept.");
 products.sort((a, b) => Number(b.comparison_type === "rakuten_shops") - Number(a.comparison_type === "rakuten_shops") || (b.score || 0) - (a.score || 0));

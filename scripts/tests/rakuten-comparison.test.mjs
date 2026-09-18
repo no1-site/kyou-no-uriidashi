@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 import { productIdentity, validJAN, matchOffer, buildComparison, validationVersion } from "../lib/rakuten-comparison.mjs";
+import { selectionExclusion, selectionVersion } from "../lib/product-selection.mjs";
 
 const catalog = {
   productId: "soap", productCode: "4901234567894", productName: "テスト社 洗剤 500ml",
@@ -14,6 +15,22 @@ const catalog = {
   averagePrice: null, usedExcludeSalesMinPrice: null, usedExcludeSalesItemCount: null, salesMinPrice: 500
 };
 const identity = productIdentity(catalog, "日用品");
+test("discovery excludes observed appliance parts and game media, retaining main products and refills", () => {
+  for (const name of ["ホームテック Panasonic 掃除機 充電式リチウムイオン電池 AVV97V-QQ", "E-Value 丸毛ブラシ 掃除機専用", "ドライヤー用交換ノズル", "掃除機用紙パック", "掃除機用充電スタンド"]) {
+    assert.equal(selectionExclusion(name, "家電"), "appliance_accessory", name);
+  }
+  for (const name of ["非売品ゲームソフトガイドブック", "フィギア付 廻人 / Eve", "PS2用ゲームソフト ドラゴンボールZ 主題歌 CD", "フィギュア写真集"]) {
+    assert.equal(selectionExclusion(name, "ホビー"), "related_media", name);
+  }
+  assert.equal(selectionExclusion("フィギュア用ディスプレイケース", "ホビー"), "figure_accessory");
+  for (const [name, category] of [
+    ["日立 業務・店舗用掃除機 CV-G1200", "家電"], ["充電式コードレス掃除機", "家電"],
+    ["パナソニック 紙パック式掃除機", "家電"], ["ヘアドライヤー", "家電"],
+    ["Game Soft Nintendo Switch / スイカゲーム Special Edition 日本版", "ホビー"],
+    ["ねんどろいど フィギュア", "ホビー"], ["ファイナルファンタジーVII リバース", "ホビー"],
+    ["さらさ 洗濯洗剤 詰め替え(1260g)", "日用品"], ["ドッグフード(100g)", "ペット"]
+  ]) assert.equal(selectionExclusion(name, category), "", name);
+});
 function item(shop = "one", price = 1000, overrides = {}) {
   return {
     itemCode: `${shop}:soap`, shopCode: shop, shopName: `${shop}店`,
@@ -174,7 +191,25 @@ test("pipeline preserves the previous file on authentication failure, and distin
   const products = JSON.parse(await readFile(output, "utf8"));
   assert.equal(products[0].collection_summary.compared, 0);
   assert.ok(products.every(p => p.score === null && p.offers.length === 0));
+  assert.ok(products.every(p => !selectionExclusion(p.name, p.category)));
+  assert.ok(products[0].collection_summary.categories.find(c => c.category === "家電").selection_excluded.appliance_accessory > 0);
   assert.match(reference.stdout, /no shop comparison was confirmed/);
+});
+
+test("irrelevant catalog results do not consume the eight comparison candidate slots", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "selection-test-"));
+  const output = join(directory, "products.json");
+  const result = spawnSync(process.execPath, ["--import", fileURLToPath(new URL("./fixtures/mock-rakuten.mjs", import.meta.url)), fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))], {
+    encoding: "utf8", env: { ...process.env, MOCK_SCENARIO: "selection", RAKUTEN_APPLICATION_ID: "test", RAKUTEN_ACCESS_KEY: "test", RAKUTEN_REQUEST_INTERVAL_MS: "0", RAKUTEN_OUTPUT_PATH: output, RAKUTEN_HISTORY_PATH: join(directory, "history.json") }
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const products = JSON.parse(await readFile(output, "utf8"));
+  assert.equal(products.length, 12);
+  assert.ok(products.every(p => p.comparison_type === "rakuten_shops" && !selectionExclusion(p.name, p.category)));
+  const summary = products[0].collection_summary;
+  assert.equal(summary.selection_version, selectionVersion);
+  assert.equal(summary.categories.find(c => c.category === "家電").selection_excluded.appliance_accessory, 18);
+  assert.equal(summary.categories.find(c => c.category === "ホビー").selection_excluded.related_media, 18);
 });
 
 test("UI shows shop links at equal prices, escapes labels and marks legacy data unconfirmed", async () => {
