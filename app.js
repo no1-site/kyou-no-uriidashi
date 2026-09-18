@@ -140,8 +140,8 @@ function updateSignal() {
 
   if (headingElement) {
     headingElement.textContent = comparedDeals.length
-      ? "楽天のショップ別価格比較"
-      : "楽天の参考商品（比較条件未確認）";
+      ? "楽天市場・Yahoo!ショッピングの価格比較"
+      : "参考商品（比較条件未確認）";
   }
 
   if (!top) {
