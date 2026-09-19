@@ -69,13 +69,13 @@ test("dry-run collects and validates without publication, overrides output paths
   assert.deepEqual(await readdir(join(config.repositoryPath, ".local")), []);
 });
 
-test("configured Keepa runs after Yahoo in dry-run", async () => {
+test("configured Keepa is forcibly skipped in dry-run", async () => {
   const config = await setup();
   const stages = [];
-  const result = await runDryRun({ ...config, environment: environment({ KEEPA_API_KEY: "dry-fixture-keepa" }),
+  const result = await runDryRun({ ...config, environment: environment({ KEEPA_API_KEY: "dry-fixture-keepa", MOCK_UPDATE_FAILURE: "keepa" }),
     runStage: (name, env) => { stages.push(name); return fixtureStage(name, env); } });
   assert.equal(result.ok, true);
-  assert.deepEqual(stages, ["rakuten", "yahoo", "keepa"]);
+  assert.deepEqual(stages, ["rakuten", "yahoo"]);
   await assertUntouched(config);
 });
 
@@ -88,7 +88,7 @@ test("dry-run with no production history does not create its file or parent dire
   await assertUntouched(config);
 });
 
-for (const failure of ["rakuten", "yahoo", "keepa", "validation"]) {
+for (const failure of ["rakuten", "yahoo", "validation"]) {
   test(`dry-run ${failure} failure never changes live files and removes staging`, async () => {
     const config = await setup();
     const result = await runDryRun({ ...config,
@@ -96,7 +96,7 @@ for (const failure of ["rakuten", "yahoo", "keepa", "validation"]) {
         MOCK_SCENARIO: failure === "rakuten" ? "denied" : "" }),
       runStage: async (name, env) => {
         fixtureStage(name, env);
-        if (failure === "validation" && name === "keepa") {
+        if (failure === "validation" && name === "yahoo") {
           const products = JSON.parse(await readFile(env.KEEPA_PRODUCTS_PATH, "utf8"));
           products[0].offers[0].price = 0;
           await writeFile(env.KEEPA_PRODUCTS_PATH, JSON.stringify(products));

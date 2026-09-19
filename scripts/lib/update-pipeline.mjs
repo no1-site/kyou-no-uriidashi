@@ -1,3 +1,4 @@
+import { remainingStageMilliseconds } from "./api-budget.mjs";
 import { mkdir, mkdtemp, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,7 +23,7 @@ export async function atomicWrite(path, contents) {
 export function runFetchStage(name, environment) {
   return new Promise((done, reject) => {
     const child = spawn(process.execPath, ["--dns-result-order=ipv4first", join(scriptDirectory, `fetch-${name}.mjs`)], {
-      env: environment, stdio: "inherit", windowsHide: true
+      env: environment, stdio: "inherit", windowsHide: true, timeout: remainingStageMilliseconds(environment)
     });
     child.once("error", () => reject(new Error(`Update stage failed: ${name}`)));
     child.once("exit", code => code === 0 ? done() : reject(new Error(`Update stage failed: ${name}`)));
@@ -52,7 +53,7 @@ export async function runUpdate({ repositoryPath, historyPath, environment = pro
     const previous = previousBytes ? JSON.parse(previousBytes.toString("utf8")) : [];
     await mkdir(dirname(historyPath), { recursive: true });
     const { products, productBytes, historyBytes, stagedProducts } = await collectStagedProducts({
-      staging, historyPath, previous, environment, runStage
+      staging, historyPath, previous, environment: { ...environment, TARGET_PRODUCT_COUNT: "" }, runStage
     });
     // Detect another writer before publication; never overwrite their changes.
     const currentBytes = await readFile(productsPath).catch(error => {

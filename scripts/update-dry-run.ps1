@@ -1,9 +1,10 @@
-﻿$ErrorActionPreference = "Stop"
+﻿param([ValidateSet(20, 50, 100)][int]$TargetProductCount)
+$ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 $started = [System.Diagnostics.Stopwatch]::StartNew()
 $exitCode = 1
-$credentialNames = @("RAKUTEN_APPLICATION_ID", "RAKUTEN_ACCESS_KEY", "RAKUTEN_AFFILIATE_ID", "YAHOO_CLIENT_ID", "YAHOO_AFFILIATE_ID", "KEEPA_API_KEY", "AMAZON_ASSOCIATE_TAG", "DRY_RUN_HISTORY_PATH", "NODE_OPTIONS", "NODE_DEBUG")
+$credentialNames = @("RAKUTEN_APPLICATION_ID", "RAKUTEN_ACCESS_KEY", "RAKUTEN_AFFILIATE_ID", "YAHOO_CLIENT_ID", "YAHOO_AFFILIATE_ID", "KEEPA_API_KEY", "AMAZON_ASSOCIATE_TAG", "DRY_RUN_HISTORY_PATH", "NODE_OPTIONS", "NODE_DEBUG", "TARGET_PRODUCT_COUNT")
 
 try {
     # Discard inherited credentials/options; only saved encrypted credentials are used.
@@ -14,11 +15,8 @@ try {
     $env:RAKUTEN_APPLICATION_ID = [System.Net.NetworkCredential]::new("", $rakuten.ApplicationId).Password
     $env:RAKUTEN_ACCESS_KEY = [System.Net.NetworkCredential]::new("", $rakuten.AccessKey).Password
     $env:YAHOO_CLIENT_ID = [System.Net.NetworkCredential]::new("", $yahoo.ClientId).Password
-    $keepaPath = Join-Path $configDirectory "keepa-credentials.xml"
-    if (Test-Path -LiteralPath $keepaPath) {
-        $keepa = Import-Clixml -LiteralPath $keepaPath
-        $env:KEEPA_API_KEY = [System.Net.NetworkCredential]::new("", $keepa.ApiKey).Password
-    }
+    # Keepa is deliberately never loaded or enabled in dry-run.
+    if ($TargetProductCount) { $env:TARGET_PRODUCT_COUNT = [string]$TargetProductCount }
     $env:DRY_RUN_HISTORY_PATH = Join-Path $configDirectory "price-history.json"
     # No transcript, logging, Git commands, pull, or publication entry point.
     & node (Join-Path $PSScriptRoot "run-update-dry-run.mjs")

@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runDryRun, formatDryRunReport } from "./lib/dry-run.mjs";
@@ -9,6 +10,7 @@ try {
     ? resolve(process.env.LOCALAPPDATA, "KyouNoUriidashi", "price-history.json")
     : resolve(repositoryPath, ".local", "price-history.json"));
   const result = await runDryRun({ repositoryPath, historyPath });
+  if ([20, 50, 100].includes(result.target)) await writeFile(resolve(repositoryPath, ".local", `dry-run-result-${result.target}.json`), JSON.stringify(result, null, 2) + "\n");
   console.log(formatDryRunReport(result));
   process.exitCode = result.ok ? 0 : 1;
 } catch {

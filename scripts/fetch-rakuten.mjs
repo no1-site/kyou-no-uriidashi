@@ -1,10 +1,14 @@
+import { collectCatalog } from "./lib/product-catalog.mjs";
+import { createBudgetedFetch, recordResponseError } from "./lib/api-budget.mjs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildComparison, productIdentity, positiveNumber, getItemImage, httpsURL, validationVersion } from "./lib/rakuten-comparison.mjs";
+import { buildComparison, matchOffer, productIdentity, positiveNumber, getItemImage, httpsURL, validationVersion } from "./lib/rakuten-comparison.mjs";
 import { selectionExclusion, selectionVersion } from "./lib/product-selection.mjs";
 import { canRankPriceOffers, shippingPolicyVersion } from "../shipping-policy.mjs";
 
+const apiFetch = createBudgetedFetch("rakuten");
 const applicationId = process.env.RAKUTEN_APPLICATION_ID;
 const accessKey = process.env.RAKUTEN_ACCESS_KEY;
 const affiliateId = process.env.RAKUTEN_AFFILIATE_ID;
@@ -56,11 +60,11 @@ async function request(kind, params) {
   summary.requests++;
   let response;
   try {
-    response = await fetch(url, {
+    response = await apiFetch(url, {
       headers: { accessKey, Referer: "https://no1-site.github.io/kyou-no-uriidashi/" },
       signal: AbortSignal.timeout(15000)
     });
-  } catch { throw new Error("network_or_timeout"); }
+  } catch (error) { if (error.fatal) throw error; throw new Error("network_or_timeout"); }
   if (response.status === 404) return [];
   if (!response.ok) {
     const error = new Error(`HTTP_${response.status}`);
@@ -68,11 +72,11 @@ async function request(kind, params) {
     throw error;
   }
   let data;
-  try { data = await response.json(); } catch { throw new Error("invalid_json"); }
-  if (data?.error || data?.errors) throw new Error("api_error");
-  if (!data || typeof data !== "object") throw new Error("invalid_response");
+  try { data = await response.json(); } catch { recordResponseError(); throw new Error("invalid_json"); }
+  if (data?.error || data?.errors) { recordResponseError(); throw new Error("api_error"); }
+  if (!data || typeof data !== "object") { recordResponseError(); throw new Error("invalid_response"); }
   const rows = extractResults(data);
-  if (!rows.length && Number(data.count) > 0) throw new Error("unrecognized_response");
+  if (!rows.length && Number(data.count) > 0) { recordResponseError(); throw new Error("unrecognized_response"); }
   return rows;
 }
 
@@ -210,6 +214,27 @@ async function saveHistory(history, products) {
 const history = await readHistory();
 let products = [];
 console.log("[SHOP COMPARISON] Starting. This may take a few minutes.");
+if (process.env.TRACKING_PLAN_PATH) {
+  const { config, catalog, target } = JSON.parse(await readFile(process.env.TRACKING_PLAN_PATH, "utf8"));
+  const collected = await collectCatalog({ catalog, config, target,
+    compare: async identity => {
+      const metricPath = process.env.COLLECTION_METRICS_PATH;
+      if (metricPath) { const m = JSON.parse(readFileSync(metricPath, "utf8")); m.attempted++; writeFileSync(metricPath, JSON.stringify(m)); }
+      const rows = await listingSearch(identity.jan);
+      // Catalog mode requires explicit JAN evidence in every Rakuten offer.
+      const result = buildComparison(identity, rows.filter(row => {
+        const matched = matchOffer(identity, row, Date.parse(checkedAt));
+        return matched.offer?.matched_jan === identity.jan;
+      }), { history, checkedAt });
+      return result.product || null;
+    },
+    discover: async plan => discover(plan, { catalog_rows: 0, selection_excluded: {}, identities: 0 })
+  });
+  products = collected.products;
+  summary.categories = collected.diagnostics;
+  summary.target = target;
+  summary.mode = "catalog";
+} else {
 for (const search of searches) {
   const diagnostics = {
     category: search.category, catalog_rows: 0, identities: 0, attempted: 0,
@@ -218,6 +243,7 @@ for (const search of searches) {
   const compared = await compareCategory(search, history, diagnostics);
   summary.categories.push(diagnostics);
   products.push(...(compared.length ? compared : await popularFallback(search, diagnostics)));
+}
 }
 if (!products.length) throw new Error("No products fetched. Existing product data has been kept.");
 products.sort((a, b) => Number(b.comparison_type === "rakuten_shops") - Number(a.comparison_type === "rakuten_shops") || (b.score || 0) - (a.score || 0));

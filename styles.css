@@ -89,3 +89,5 @@ footer{max-width:var(--max);margin:auto;padding:35px 22px 55px;border-top:1px so
   .trust-row{grid-template-columns:repeat(2,1fr)}.deal-grid,.steps{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}
   .cta{grid-template-columns:1fr;padding:30px 24px}.cta h2{font-size:34px}
 }
+
+.load-more { grid-column: 1 / -1; padding: 16px; min-height: 48px; font: inherit; border: 1px solid #ccc; border-radius: 12px; background: #fff; cursor: pointer; }

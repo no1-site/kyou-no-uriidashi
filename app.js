@@ -253,7 +253,7 @@ async function loadDeals() {
   }
 }
 
-function render(filter) {
+function render(filter, visibleCount = 20) {
   const target = document.querySelector("#dealGrid");
   if (!target) return;
 
@@ -267,7 +267,7 @@ function render(filter) {
     return;
   }
 
-  target.innerHTML = list.map((item, index) => {
+  target.innerHTML = list.slice(0, visibleCount).map((item, index) => {
     const imageURL = safeURL(item.image_url);
     const productURL = safeURL(item.best_url);
     const isSample = item.name.startsWith("サンプル");
@@ -402,6 +402,10 @@ function render(filter) {
       </article>
     `;
   }).join("");
+  if (list.length > visibleCount) {
+    target.innerHTML += '<button type="button" class="load-more">もっと見る（残り' + (list.length - visibleCount) + '商品）</button>';
+    document.querySelector(".load-more")?.addEventListener("click", () => render(filter, visibleCount + 20));
+  }
 }
 
 document.querySelectorAll(".filter").forEach(button => {

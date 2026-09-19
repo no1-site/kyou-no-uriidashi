@@ -1,9 +1,11 @@
+import { createBudgetedFetch, recordResponseError } from "./lib/api-budget.mjs";
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validJAN } from "./lib/rakuten-comparison.mjs";
 import { mergeYahooOffers, yahooComparisonVersion } from "./lib/yahoo-comparison.mjs";
 
+const apiFetch = createBudgetedFetch("yahoo");
 const clientId = process.env.YAHOO_CLIENT_ID;
 const affiliateId = process.env.YAHOO_AFFILIATE_ID || "";
 if (!clientId) throw new Error("Yahoo Client ID is missing.");
@@ -43,7 +45,7 @@ async function searchYahoo(jan, requestNo) {
 
   let response;
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    response = await apiFetch(url, { signal: AbortSignal.timeout(15000) });
   } catch {
     throw new Error("Yahoo network_or_timeout");
   }
@@ -56,10 +58,11 @@ async function searchYahoo(jan, requestNo) {
   try {
     data = await response.json();
   } catch {
+    recordResponseError();
     throw new Error("Yahoo invalid_json");
   }
 
-  if (data?.error || data?.errors || !Array.isArray(data?.hits)) throw new Error("Yahoo invalid_response");
+  if (data?.error || data?.errors || !Array.isArray(data?.hits)) { recordResponseError(); throw new Error("Yahoo invalid_response"); }
   return data.hits;
 }
 
