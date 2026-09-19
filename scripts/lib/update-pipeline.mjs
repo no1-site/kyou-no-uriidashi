@@ -1,8 +1,8 @@
-import { copyFile, mkdir, mkdtemp, open, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import { finalizeProducts, validatePublication } from "./publication.mjs";
+import { collectStagedProducts } from "./staged-collection.mjs";
 
 const scriptDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -45,36 +45,15 @@ export async function runUpdate({ repositoryPath, historyPath, environment = pro
   try {
     staging = await mkdtemp(join(localDirectory, "update-"));
     await lock.writeFile(JSON.stringify({ staging, started_at: new Date().toISOString() }));
-    const stagedProducts = join(staging, "products.json");
-    const stagedHistory = join(staging, "price-history.json");
     const previousBytes = await readFile(productsPath).catch(error => {
       if (error.code === "ENOENT") return null;
       throw error;
     });
     const previous = previousBytes ? JSON.parse(previousBytes.toString("utf8")) : [];
     await mkdir(dirname(historyPath), { recursive: true });
-    try {
-      const history = JSON.parse(await readFile(historyPath, "utf8"));
-      if (!history?.products || typeof history.products !== "object" || Array.isArray(history.products)) throw new Error("Invalid existing price history.");
-      await copyFile(historyPath, stagedHistory);
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
-    }
-    const stagedEnvironment = { ...environment,
-      RAKUTEN_OUTPUT_PATH: stagedProducts, RAKUTEN_HISTORY_PATH: stagedHistory,
-      YAHOO_PRODUCTS_PATH: stagedProducts, KEEPA_PRODUCTS_PATH: stagedProducts };
-    await runStage("rakuten", stagedEnvironment);
-    const rakuten = JSON.parse(await readFile(stagedProducts, "utf8"));
-    if (Object.values(rakuten[0]?.collection_summary?.errors || {}).some(count => count > 0)) {
-      throw new Error("Rakuten collection contained API errors; publication stopped.");
-    }
-    if (environment.YAHOO_CLIENT_ID) await runStage("yahoo", stagedEnvironment);
-    if (environment.KEEPA_API_KEY) await runStage("keepa", stagedEnvironment);
-    const products = finalizeProducts(JSON.parse(await readFile(stagedProducts, "utf8")));
-    validatePublication(products, previous);
-    const productBytes = JSON.stringify(products, null, 2) + "\n";
-    await writeFile(stagedProducts, productBytes);
-    const historyBytes = await readFile(stagedHistory);
+    const { products, productBytes, historyBytes, stagedProducts } = await collectStagedProducts({
+      staging, historyPath, previous, environment, runStage
+    });
     // Detect another writer before publication; never overwrite their changes.
     const currentBytes = await readFile(productsPath).catch(error => {
       if (error.code === "ENOENT") return null;

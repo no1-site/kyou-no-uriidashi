@@ -3,27 +3,29 @@ import { httpsURL, positiveNumber, validJAN, matchIdentity } from "./rakuten-com
 
 export const yahooComparisonVersion = "yahoo-jan-quantity-v2";
 
-export function yahooOffer(hit, expectedJan, product = {}) {
-  if (!hit || typeof hit !== "object") return null;
+export function evaluateYahooOffer(hit, expectedJan, product = {}) {
+  if (!hit || typeof hit !== "object") return { reason: "invalid_item" };
   const jan = validJAN(hit.janCode);
-  if (!jan || jan !== validJAN(expectedJan)) return null;
-  if (hit.condition !== "new") return null;
-  if (hit.inStock !== true) return null;
+  if (!jan || jan !== validJAN(expectedJan)) return { reason: "jan_mismatch" };
+  if (hit.condition !== "new") return { reason: "condition" };
+  if (hit.inStock !== true) return { reason: "unavailable" };
   const identity = { jan, name: product.name || "", model: product.model || "", brand: product.brand || "" };
   const description = `${hit.description || ""} ${hit.headline || ""} JAN ${jan}`;
-  if (matchIdentity(identity, hit.name, description, { strict: true }).reason) return null;
+  const { reason } = matchIdentity(identity, hit.name, description, { strict: true });
+  if (reason) return { reason };
 
   const price = positiveNumber(hit.price);
   const url = httpsURL(hit.url);
   const sellerId = String(hit.seller?.sellerId || "").trim();
   const sellerName = String(hit.seller?.name || "").trim();
-  if (!price || !url || !sellerId || !sellerName) return null;
+  if (!price) return { reason: "missing_price" };
+  if (!url || !sellerId || !sellerName) return { reason: "missing_shop_or_link" };
 
   const shippingCode = Number(hit.shipping?.code);
   const postage = shippingCode === 2 ? "included" : "unknown";
   const imageUrl = httpsURL(hit.exImage?.url || hit.image?.medium || hit.image?.small);
 
-  return {
+  return { offer: {
     shop_code: `yahoo:${sellerId}`,
     shop_name: `Yahoo!ショッピング｜${sellerName}`,
     item_code: `yahoo:${String(hit.code || "")}`,
@@ -39,12 +41,18 @@ export function yahooOffer(hit, expectedJan, product = {}) {
     image_url: imageUrl,
     marketplace: "Yahoo!ショッピング",
     marketplace_code: "yahoo"
-  };
+  } };
+}
+
+// Preserve the original offer/null interface for callers that need no diagnostics.
+export function yahooOffer(hit, expectedJan, product = {}) {
+  return evaluateYahooOffer(hit, expectedJan, product).offer || null;
 }
 
 export function mergeYahooOffers(product, hits) {
   const expectedJan = validJAN(product?.product_code);
-  if (!expectedJan || !Array.isArray(product?.offers)) return { product, added: 0 };
+  const rejected = {};
+  if (!expectedJan || !Array.isArray(product?.offers)) return { product, added: 0, rejected };
 
   const shops = new Map();
   for (const offer of product.offers) {
@@ -54,16 +62,22 @@ export function mergeYahooOffers(product, hits) {
 
   let added = 0;
   for (const hit of Array.isArray(hits) ? hits : []) {
-    const offer = yahooOffer(hit, expectedJan, product);
-    if (!offer) continue;
+    const { offer, reason } = evaluateYahooOffer(hit, expectedJan, product);
+    if (!offer) {
+      rejected[reason] = (rejected[reason] || 0) + 1;
+      continue;
+    }
     const previous = shops.get(offer.shop_code);
+    // One additional result from the same shop is excluded even if its lower
+    // price replaces the previously selected result. Count each hit only once.
+    if (previous) rejected.duplicate_shop = (rejected.duplicate_shop || 0) + 1;
     if (!previous || Number(offer.price) < Number(previous.price)) {
       if (!previous) added++;
       shops.set(offer.shop_code, offer);
     }
   }
 
-  if (!added) return { product, added: 0 };
+  if (!added) return { product, added: 0, rejected };
 
   const offers = [...shops.values()].sort((a, b) => Number(a.price) - Number(b.price));
   const marketplaces = [...new Set([
@@ -82,5 +96,5 @@ export function mergeYahooOffers(product, hits) {
     yahoo_comparison_version: yahooComparisonVersion
   });
 
-  return { product: merged, added };
+  return { product: merged, added, rejected };
 }
