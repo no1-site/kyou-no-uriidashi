@@ -119,6 +119,7 @@ export function keepaAmazonOffer(sourceProduct, keepaProducts, associateTag = ""
     postage: selected.price.postage,
     price_basis: selected.price.basis,
     match_method: selected.modelMatch ? "jan_model" : "jan",
+    matched_jan: expectedJan,
     review_average: 0,
     review_count: 0,
     image_url: imageUrl,

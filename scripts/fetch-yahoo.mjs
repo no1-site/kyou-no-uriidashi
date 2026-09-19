@@ -59,7 +59,8 @@ async function searchYahoo(jan, requestNo) {
     throw new Error("Yahoo invalid_json");
   }
 
-  return Array.isArray(data?.hits) ? data.hits : [];
+  if (data?.error || data?.errors || !Array.isArray(data?.hits)) throw new Error("Yahoo invalid_response");
+  return data.hits;
 }
 
 const products = JSON.parse(await readFile(productsPath, "utf8"));

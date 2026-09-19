@@ -1,14 +1,17 @@
 import { applyShippingPolicy } from "../../shipping-policy.mjs";
-import { httpsURL, positiveNumber, validJAN } from "./rakuten-comparison.mjs";
+import { httpsURL, positiveNumber, validJAN, matchIdentity } from "./rakuten-comparison.mjs";
 
-export const yahooComparisonVersion = "yahoo-jan-v1";
+export const yahooComparisonVersion = "yahoo-jan-quantity-v2";
 
-export function yahooOffer(hit, expectedJan) {
+export function yahooOffer(hit, expectedJan, product = {}) {
   if (!hit || typeof hit !== "object") return null;
   const jan = validJAN(hit.janCode);
   if (!jan || jan !== validJAN(expectedJan)) return null;
-  if (hit.condition && hit.condition !== "new") return null;
+  if (hit.condition !== "new") return null;
   if (hit.inStock !== true) return null;
+  const identity = { jan, name: product.name || "", model: product.model || "", brand: product.brand || "" };
+  const description = `${hit.description || ""} ${hit.headline || ""} JAN ${jan}`;
+  if (matchIdentity(identity, hit.name, description, { strict: true }).reason) return null;
 
   const price = positiveNumber(hit.price);
   const url = httpsURL(hit.url);
@@ -29,6 +32,8 @@ export function yahooOffer(hit, expectedJan) {
     url,
     postage,
     match_method: "jan",
+    matched_jan: jan,
+    identity_validation_version: yahooComparisonVersion,
     review_average: Math.min(5, positiveNumber(hit.review?.rate) || 0),
     review_count: Math.max(0, Math.trunc(Number(hit.review?.count) || 0)),
     image_url: imageUrl,
@@ -49,7 +54,7 @@ export function mergeYahooOffers(product, hits) {
 
   let added = 0;
   for (const hit of Array.isArray(hits) ? hits : []) {
-    const offer = yahooOffer(hit, expectedJan);
+    const offer = yahooOffer(hit, expectedJan, product);
     if (!offer) continue;
     const previous = shops.get(offer.shop_code);
     if (!previous || Number(offer.price) < Number(previous.price)) {

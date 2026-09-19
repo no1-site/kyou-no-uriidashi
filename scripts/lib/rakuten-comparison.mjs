@@ -136,10 +136,11 @@ function outsideSaleTime(item, now) {
   return false;
 }
 
-export function matchOffer(identity, item, now = Date.now()) {
-  if (!item || typeof item !== "object") return { reason: "invalid_item" };
-  const title = normalizeText(item.itemName);
-  const caption = normalizeText(item.itemCaption);
+// Shared identity checks. Strict mode is used for external JAN search results:
+// a returned JAN must not override contradictory or missing unit/model evidence.
+export function matchIdentity(identity, name, description, { strict = false } = {}) {
+  const title = normalizeText(name);
+  const caption = normalizeText(description);
   const text = `${title} ${caption}`;
   if (!title) return { reason: "missing_name" };
   if (conditionPattern.test(text)) return { reason: "condition" };
@@ -159,6 +160,20 @@ export function matchOffer(identity, item, now = Date.now()) {
   }
   const quantityReason = quantityProblem(caption, expected);
   if (quantityReason) return { reason: quantityReason };
+  if (strict) {
+    if (choicePattern.test(caption) || multiplierPattern.test(caption) || hasBundle(caption)) {
+      return { reason: "variant_or_bundle" };
+    }
+    const described = quantities(text);
+    if ([...described].some(quantity => !expected.has(quantity))) return { reason: "quantity_mismatch" };
+    if ([...expected].some(quantity => !described.has(quantity))) return { reason: "quantity_unconfirmed" };
+    if (identity.model && !hasExactModel(title, identity.model)) return { reason: "model_unconfirmed" };
+    if (identity.model) {
+      for (const [, model] of caption.matchAll(/(?:型番|型式|品番|model|part number)\s*[:：]?\s*([a-z0-9]+(?:-[a-z0-9]+)*)/g)) {
+        if (!hasExactModel(model, identity.model)) return { reason: "model_mismatch" };
+      }
+    }
+  }
   const codes = janCodes(text);
   if (codes.some(code => code !== identity.jan)) return { reason: "conflicting_jan" };
   let matchMethod = "";
@@ -171,6 +186,13 @@ export function matchOffer(identity, item, now = Date.now()) {
   } else {
     return { reason: "identity_unconfirmed" };
   }
+  return { matchMethod };
+}
+
+export function matchOffer(identity, item, now = Date.now()) {
+  if (!item || typeof item !== "object") return { reason: "invalid_item" };
+  const { matchMethod, reason } = matchIdentity(identity, item.itemName, item.itemCaption);
+  if (reason) return { reason };
   if (!flag(item.availability, 1) || outsideSaleTime(item, now)) return { reason: "unavailable" };
   if (!flag(item.taxFlag, 0)) return { reason: "tax_unconfirmed" };
   const price = positiveNumber(item.itemPriceMin3) || positiveNumber(item.itemPrice);
@@ -195,6 +217,7 @@ export function matchOffer(identity, item, now = Date.now()) {
     price, url,
     postage: flag(item.postageFlag, 0) ? "included" : flag(item.postageFlag, 1) ? "extra" : "unknown",
     match_method: matchMethod,
+    matched_jan: matchMethod === "jan" ? identity.jan : null,
     review_average: Math.min(5, positiveNumber(item.reviewAverage) || 0),
     review_count: Math.max(0, Math.trunc(Number(item.reviewCount) || 0)),
     image_url: httpsURL(getItemImage(item))
@@ -252,7 +275,7 @@ export function buildComparison(identity, items, { history = { products: {} }, c
   const historicalDiscount = historicalPrice ? percentageBelow(lowest.price, historicalPrice) : 0;
   return { rejected, matchedShops: offers.length, product: applyShippingPolicy({
     id: identity.id, product_id: identity.product_id || null,
-    product_code: identity.jan || null, model: identity.model || null,
+    product_code: identity.jan || null, model: identity.model || null, brand: identity.brand || null,
     name: identity.name, category: identity.category, shop: lowest.shop_name,
     price: lowest.price, market_price: Math.round(average),
     historical_price: historicalPrice, historical_discount_percent: historicalDiscount || null,
