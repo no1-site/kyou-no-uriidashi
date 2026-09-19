@@ -1,3 +1,4 @@
+import { yahooInterval } from "./yahoo-rate-limit.mjs";
 import { fileURLToPath } from "node:url";
 import { validateTrackingConfig, validateCatalog, mergeConfirmedCatalog } from "./product-catalog.mjs";
 import { copyFile, readFile, writeFile } from "node:fs/promises";
@@ -7,6 +8,7 @@ import { finalizeProducts, validatePublication } from "./publication.mjs";
 // Shared by publication and dry-run. Every write is directed to the supplied
 // staging directory; this module has no Git or live-file finalization capability.
 export async function collectStagedProducts({ staging, historyPath, previous, environment, runStage }) {
+  const yahooRequestInterval = yahooInterval(environment.YAHOO_REQUEST_INTERVAL_MS);
   const stagedProducts = join(staging, "products.json");
   const stagedHistory = join(staging, "price-history.json");
   try {
@@ -44,10 +46,10 @@ export async function collectStagedProducts({ staging, historyPath, previous, en
     TRACKING_PLAN_PATH: "", COLLECTION_METRICS_PATH: "", COLLECTION_DEADLINE: "",
     RAKUTEN_OUTPUT_PATH: stagedProducts, RAKUTEN_HISTORY_PATH: stagedHistory,
     YAHOO_PRODUCTS_PATH: stagedProducts, KEEPA_PRODUCTS_PATH: stagedProducts,
+    YAHOO_METRICS_PATH: join(staging, "yahoo-metrics.json"), YAHOO_REQUEST_INTERVAL_MS: String(yahooRequestInterval),
     ...(plan ? { TRACKING_PLAN_PATH: join(staging, "tracking-plan.json"), COLLECTION_METRICS_PATH: join(staging, "metrics.json"),
       COLLECTION_DEADLINE: String(Date.now() + plan.config.maxSeconds * 1000), KEEPA_API_KEY: "",
-      RAKUTEN_REQUEST_INTERVAL_MS: String(Math.max(1200, Number(environment.RAKUTEN_REQUEST_INTERVAL_MS) || 1200)),
-      YAHOO_REQUEST_INTERVAL_MS: String(Math.max(1100, Number(environment.YAHOO_REQUEST_INTERVAL_MS) || 1100)) } : {}) };
+      RAKUTEN_REQUEST_INTERVAL_MS: String(Math.max(1200, Number(environment.RAKUTEN_REQUEST_INTERVAL_MS) || 1200)) } : {}) };
   await runStage("rakuten", stagedEnvironment);
   const rakuten = JSON.parse(await readFile(stagedProducts, "utf8"));
   if (Object.values(rakuten[0]?.collection_summary?.errors || {}).some(count => count > 0)) {

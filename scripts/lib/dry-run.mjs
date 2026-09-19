@@ -57,6 +57,7 @@ export async function runDryRun({ repositoryPath, historyPath, environment = pro
   let staging;
   let result;
   let metrics;
+  let yahooTiming;
   try {
     if (!environment.RAKUTEN_APPLICATION_ID || !environment.RAKUTEN_ACCESS_KEY || !environment.YAHOO_CLIENT_ID) {
       throw Object.assign(new Error("Missing credentials."), { dryRunCode: "credentials" });
@@ -98,6 +99,7 @@ export async function runDryRun({ repositoryPath, historyPath, environment = pro
     // Only the directory created by this invocation is removed. No real data,
     // credentials, log, Git files, or production history is ever written here.
     try {
+      if (staging) yahooTiming = await readFile(join(staging, "yahoo-metrics.json"), "utf8").then(JSON.parse).catch(() => undefined);
       if (staging) metrics = await readFile(join(staging, "metrics.json"), "utf8").then(JSON.parse).catch(() => undefined);
       if (staging && resolve(staging).startsWith(localDirectory + sep)) await rm(staging, { recursive: true, force: true });
     } catch { result = { ok: false, errorCode: "failed" }; }
@@ -106,7 +108,7 @@ export async function runDryRun({ repositoryPath, historyPath, environment = pro
       await rm(lockPath, { force: true });
     }
   }
-  return { ...result, ...(metrics ? { metrics, target: result.target || metrics.target || Number(environment.TARGET_PRODUCT_COUNT) } : {}), elapsedSeconds: (performance.now() - started) / 1000 };
+  return { ...result, ...(yahooTiming ? { yahooTiming } : {}), ...(metrics ? { metrics, target: result.target || metrics.target || Number(environment.TARGET_PRODUCT_COUNT) } : {}), elapsedSeconds: (performance.now() - started) / 1000 };
 }
 
 export function formatDryRunReport(result) {
@@ -127,6 +129,10 @@ export function formatDryRunReport(result) {
     `目標商品数：${count(result.target)}`,
     `楽天APIリクエスト数：${count(result.metrics?.rakuten)}`,
     `Yahoo APIリクエスト数：${count(result.metrics?.yahoo)}`,
+    `Yahoo 429件数：${count(result.yahooTiming?.rateLimited)}`,
+    `Yahoo実効平均間隔：${Number.isFinite(result.yahooTiming?.averageIntervalMs) ? result.yahooTiming.averageIntervalMs.toFixed(1) + "ms" : "未計測"}`,
+    `Yahoo実行時間：${Number.isFinite(result.yahooTiming?.elapsedSeconds) ? result.yahooTiming.elapsedSeconds.toFixed(1) + "秒" : "未計測"}`,
+    `Yahoo Retry-After：${Number.isFinite(result.yahooTiming?.retryAfterSeconds) ? result.yahooTiming.retryAfterSeconds + "秒（記録のみ）" : "有効な指定なし"}`,
     `比較を試みた商品数：${count(result.metrics?.attempted)}`,
     `送料込み比較可能商品数：${count(result.shippingCompared)}`,
     `APIエラー数：${count(result.metrics?.apiErrors)}`,

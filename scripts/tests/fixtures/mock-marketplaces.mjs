@@ -1,3 +1,11 @@
+// Virtual time exists only in this offline --import fixture; all network is mocked.
+let fixtureTime = 0;
+const realTimer = globalThis.setTimeout;
+Object.defineProperty(globalThis, "performance", { value: { now: () => fixtureTime }, configurable: true });
+globalThis.setTimeout = (callback, ms, ...args) => {
+  fixtureTime += Math.max(0, Number(ms) || 0);
+  return realTimer(callback, 0, ...args);
+};
 import "./mock-rakuten.mjs";
 
 const rakutenFetch = globalThis.fetch;
@@ -6,6 +14,7 @@ globalThis.fetch = async input => {
   const url = new URL(input);
   if (url.hostname === "shopping.yahooapis.jp") {
     yahooRequests++;
+    if (process.env.MOCK_UPDATE_FAILURE === "yahoo-429" && yahooRequests === 2) return new Response("", { status: 429, headers: { "Retry-After": "65" } });
     if (process.env.MOCK_UPDATE_FAILURE === "yahoo" && yahooRequests === 2) return new Response("", { status: 503 });
     if (process.env.MOCK_UPDATE_FAILURE === "yahoo-invalid") return new Response(JSON.stringify({ error: { message: "fixture" } }));
     const hit = {

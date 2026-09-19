@@ -129,7 +129,7 @@ test('100-product real fetch scripts integrate Yahoo, metrics and validation off
   await writeFile(metricPath,JSON.stringify({rakuten:0,yahoo:0,attempted:0,apiErrors:0,rateLimited:0,deadline:Date.now()+60000,limits:{rakuten:100,yahoo:100}}));
   const env={...process.env,RAKUTEN_APPLICATION_ID:'test',RAKUTEN_ACCESS_KEY:'test',YAHOO_CLIENT_ID:'test',KEEPA_API_KEY:'',RAKUTEN_AFFILIATE_ID:'',YAHOO_AFFILIATE_ID:'',
     TRACKING_PLAN_PATH:plan,COLLECTION_METRICS_PATH:metricPath,RAKUTEN_OUTPUT_PATH:productsPath,YAHOO_PRODUCTS_PATH:productsPath,RAKUTEN_HISTORY_PATH:historyPath,
-    RAKUTEN_REQUEST_INTERVAL_MS:'0',YAHOO_REQUEST_INTERVAL_MS:'0',MOCK_UPDATE_FAILURE:'',MOCK_SCENARIO:''};
+    RAKUTEN_REQUEST_INTERVAL_MS:'0',YAHOO_REQUEST_INTERVAL_MS:'2200',MOCK_UPDATE_FAILURE:'',MOCK_SCENARIO:''};
   for(const stage of ['rakuten','yahoo']){
     const result=spawnSync(process.execPath,['--import',new URL('./fixtures/mock-marketplaces.mjs',import.meta.url).href,fileURLToPath(new URL(`../fetch-${stage}.mjs`,import.meta.url))],{env,encoding:'utf8'});
     assert.equal(result.status,0,result.stderr);
