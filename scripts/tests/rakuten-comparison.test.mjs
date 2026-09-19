@@ -223,7 +223,7 @@ test("history excludes today and stale records and requires two distinct prior d
 test("pipeline produces 12 comparisons with null catalog averages and publishes only safe diagnostic counts", async () => {
   const directory = await mkdtemp(join(tmpdir(), "shop-compare-test-"));
   const output = join(directory, "products.json");
-  const result = spawnSync(process.execPath, ["--import", fileURLToPath(new URL("./fixtures/mock-rakuten.mjs", import.meta.url)), fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))], {
+  const result = spawnSync(process.execPath, ["--import", new URL("./fixtures/mock-rakuten.mjs", import.meta.url).href, fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))], {
     encoding: "utf8", env: { ...process.env, RAKUTEN_APPLICATION_ID: "private-test-app", RAKUTEN_ACCESS_KEY: "private-test-key", RAKUTEN_REQUEST_INTERVAL_MS: "0", RAKUTEN_OUTPUT_PATH: output, RAKUTEN_HISTORY_PATH: join(directory, "history.json") }
   });
   assert.equal(result.status, 0, result.stderr);
@@ -246,7 +246,7 @@ test("pipeline preserves the previous file on authentication failure, and distin
   const directory = await mkdtemp(join(tmpdir(), "shop-failure-test-"));
   const output = join(directory, "products.json");
   const env = { ...process.env, RAKUTEN_APPLICATION_ID: "test", RAKUTEN_ACCESS_KEY: "test", RAKUTEN_REQUEST_INTERVAL_MS: "0", RAKUTEN_OUTPUT_PATH: output, RAKUTEN_HISTORY_PATH: join(directory, "history.json") };
-  const args = ["--import", fileURLToPath(new URL("./fixtures/mock-rakuten.mjs", import.meta.url)), fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))];
+  const args = ["--import", new URL("./fixtures/mock-rakuten.mjs", import.meta.url).href, fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))];
   await writeFile(output, "previous data");
   const denied = spawnSync(process.execPath, args, { encoding: "utf8", env: { ...env, MOCK_SCENARIO: "denied" } });
   assert.notEqual(denied.status, 0);
@@ -264,7 +264,7 @@ test("pipeline preserves the previous file on authentication failure, and distin
 test("irrelevant catalog results do not consume the eight comparison candidate slots", async () => {
   const directory = await mkdtemp(join(tmpdir(), "selection-test-"));
   const output = join(directory, "products.json");
-  const result = spawnSync(process.execPath, ["--import", fileURLToPath(new URL("./fixtures/mock-rakuten.mjs", import.meta.url)), fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))], {
+  const result = spawnSync(process.execPath, ["--import", new URL("./fixtures/mock-rakuten.mjs", import.meta.url).href, fileURLToPath(new URL("../fetch-rakuten.mjs", import.meta.url))], {
     encoding: "utf8", env: { ...process.env, MOCK_SCENARIO: "selection", RAKUTEN_APPLICATION_ID: "test", RAKUTEN_ACCESS_KEY: "test", RAKUTEN_REQUEST_INTERVAL_MS: "0", RAKUTEN_OUTPUT_PATH: output, RAKUTEN_HISTORY_PATH: join(directory, "history.json") }
   });
   assert.equal(result.status, 0, result.stderr);

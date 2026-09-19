@@ -62,67 +62,31 @@ try {
 
     Write-UpdateLog "Starting update."
 
+    $currentBranch = & $gitExecutable -C $repositoryPath branch --show-current
+    if ($LASTEXITCODE -ne 0 -or $currentBranch -ne "main") {
+        throw "Automatic publication requires main; no files were updated."
+    }
+    $workingChanges = & $gitExecutable -C $repositoryPath status --porcelain
+    if ($LASTEXITCODE -ne 0 -or $workingChanges) {
+        throw "Automatic publication requires a clean working tree and index."
+    }
+    if (Test-Path (Join-Path $repositoryPath ".local\update.lock")) {
+        throw "An update is running or was interrupted. Inspect .local/update.lock before retrying."
+    }
+
     & $gitExecutable -C $repositoryPath pull --ff-only |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
         throw "Could not pull the latest files from GitHub."
     }
 
-    & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\fetch-rakuten.mjs") |
+    $env:UPDATE_GIT_PATH = $gitExecutable
+    & node (Join-Path $repositoryPath "scripts\run-update.mjs") |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
-        throw "Could not fetch Rakuten products."
+        throw "Staged update or publication failed. Inspect the update result before retrying."
     }
-
-    if ($env:YAHOO_CLIENT_ID) {
-        & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\\fetch-yahoo.mjs") |
-            Tee-Object -FilePath $logPath -Append
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not fetch Yahoo! Shopping products."
-        }
-    }
-    else {
-        Write-UpdateLog "Yahoo! Shopping Client ID not configured; skipping Yahoo comparison."
-    }
-
-    if ($env:KEEPA_API_KEY) {
-        & node --dns-result-order=ipv4first (Join-Path $repositoryPath "scripts\\fetch-keepa.mjs") |
-            Tee-Object -FilePath $logPath -Append
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not fetch Amazon.co.jp prices from Keepa."
-        }
-    }
-    else {
-        Write-UpdateLog "Keepa API key not configured; skipping Amazon.co.jp comparison."
-    }
-
-    & $gitExecutable -C $repositoryPath config user.name "no1-site"
-    & $gitExecutable -C $repositoryPath config user.email "no1-site@users.noreply.github.com"
-    & $gitExecutable -C $repositoryPath add products.json
-
-    & $gitExecutable -C $repositoryPath diff --cached --quiet
-    if ($LASTEXITCODE -eq 0) {
-        Write-UpdateLog "No product data changes."
-    }
-    else {
-        $japanTimeZone = [TimeZoneInfo]::FindSystemTimeZoneById("Tokyo Standard Time")
-        $japanNow = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $japanTimeZone)
-        $commitMessage = "Update market products " + $japanNow.ToString("yyyy-MM-dd HH:mm")
-
-        & $gitExecutable -C $repositoryPath commit -m $commitMessage |
-            Tee-Object -FilePath $logPath -Append
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not commit product data."
-        }
-
-        & $gitExecutable -C $repositoryPath push origin HEAD |
-            Tee-Object -FilePath $logPath -Append
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not push product data to GitHub."
-        }
-
-        Write-UpdateLog "Product data was sent to the site."
-    }
+    Write-UpdateLog "Product data was sent to GitHub and local history was confirmed."
 }
 catch {
     $exitCode = 1
@@ -133,6 +97,7 @@ finally {
     Remove-Item Env:RAKUTEN_ACCESS_KEY -ErrorAction SilentlyContinue
     Remove-Item Env:RAKUTEN_AFFILIATE_ID -ErrorAction SilentlyContinue
     Remove-Item Env:RAKUTEN_HISTORY_PATH -ErrorAction SilentlyContinue
+    Remove-Item Env:UPDATE_GIT_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:YAHOO_CLIENT_ID -ErrorAction SilentlyContinue
     Remove-Item Env:YAHOO_AFFILIATE_ID -ErrorAction SilentlyContinue
     Remove-Item Env:KEEPA_API_KEY -ErrorAction SilentlyContinue

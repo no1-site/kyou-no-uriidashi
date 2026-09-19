@@ -59,7 +59,8 @@ async function searchYahoo(jan, requestNo) {
     throw new Error("Yahoo invalid_json");
   }
 
-  return Array.isArray(data?.hits) ? data.hits : [];
+  if (data?.error || data?.errors || !Array.isArray(data?.hits)) throw new Error("Yahoo invalid_response");
+  return data.hits;
 }
 
 const products = JSON.parse(await readFile(productsPath, "utf8"));
@@ -68,6 +69,7 @@ if (!Array.isArray(products)) throw new Error("products.json is not an array.");
 let requests = 0;
 let matchedProducts = 0;
 let addedOffers = 0;
+const excluded = {};
 const updated = [];
 
 console.log("[YAHOO] Starting Yahoo! Shopping comparison.");
@@ -80,6 +82,9 @@ for (const product of products) {
 
   const hits = await searchYahoo(jan, requests++);
   const merged = mergeYahooOffers(product, hits);
+  for (const [reason, count] of Object.entries(merged.rejected)) {
+    excluded[reason] = (excluded[reason] || 0) + count;
+  }
   if (merged.added > 0) {
     matchedProducts++;
     addedOffers += merged.added;
@@ -96,7 +101,8 @@ if (updated.length) {
       checked_at: checkedAt,
       requests,
       matched_products: matchedProducts,
-      added_offers: addedOffers
+      added_offers: addedOffers,
+      excluded
     }
   };
 }

@@ -52,6 +52,8 @@ async function requestByCodes(codes) {
     throw new Error(`Keepa ${type}`);
   }
 
+  if (!Array.isArray(data?.products)) throw new Error("Keepa invalid_response");
+
   return data;
 }
 

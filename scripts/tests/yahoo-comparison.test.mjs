@@ -51,3 +51,45 @@ test("Yahoo offer is merged without replacing Rakuten offers", () => {
   assert.equal(result.product.price, 9800);
   assert.deepEqual(result.product.marketplaces, ["楽天市場", "Yahoo!ショッピング"]);
 });
+
+const soap = { name: "テスト社 洗剤 SOAP-500-W 500ml", model: "SOAP-500-W", product_code: jan };
+
+test("Yahoo rejects capacity differences and missing capacity despite exact JAN", () => {
+  for (const name of ["テスト社 洗剤 SOAP-500-W 1L", "テスト社 洗剤 SOAP-500-W"]) {
+    assert.equal(yahooOffer(hit({ name }), jan, soap), null, name);
+  }
+  assert.ok(yahooOffer(hit({ name: "テスト社 洗剤 SOAP-500-W 0.5L" }), jan, soap));
+  assert.equal(yahooOffer(hit({ name: soap.name, description: "内容量：1000ml" }), jan, soap), null);
+});
+
+test("Yahoo rejects quantity differences including single versus multiple retail units", () => {
+  const pack = { name: "洗剤14個入", product_code: jan };
+  for (const name of ["洗剤7個入", "洗剤1個", "洗剤"]) {
+    assert.equal(yahooOffer(hit({ name }), jan, pack), null);
+  }
+  assert.ok(yahooOffer(hit({ name: "洗剤14個入" }), jan, pack));
+  assert.equal(yahooOffer(hit({ name: soap.name, description: "入数：50" }), jan, soap), null);
+});
+
+test("Yahoo rejects bundles, choices and extra quantities in title or description", () => {
+  for (const extra of ["2本セット", "×2", "まとめ買い", "おまけ", "選べる", "3本"]) {
+    assert.equal(yahooOffer(hit({ name: `${soap.name} ${extra}` }), jan, soap), null, extra);
+    assert.equal(yahooOffer(hit({ name: soap.name, description: extra }), jan, soap), null, extra);
+  }
+});
+
+test("Yahoo requires the full source model and rejects missing/suffix variant models", () => {
+  for (const name of ["テスト社 洗剤 SOAP-500-B 500ml", "テスト社 洗剤 SOAP-500-WX 500ml", "テスト社 洗剤 500ml"]) {
+    assert.equal(yahooOffer(hit({ name }), jan, soap), null, name);
+  }
+  assert.ok(yahooOffer(hit({ name: soap.name }), jan, soap));
+  assert.equal(yahooOffer(hit({ name: soap.name, description: "型番：SOAP-500-B" }), jan, soap), null);
+});
+
+test("Yahoo rejects used, unspecified condition, accessories and conflicting JAN evidence", () => {
+  for (const overrides of [
+    { condition: "used" }, { condition: undefined }, { inStock: false },
+    { description: "中古 開封品" }, { description: "互換商品" },
+    { description: "JAN 4901234567894" }, { price: 0 }, { price: -1 }
+  ]) assert.equal(yahooOffer(hit({ name: soap.name, ...overrides }), jan, soap), null);
+});
