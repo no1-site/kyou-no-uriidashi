@@ -4,9 +4,11 @@
 
 ## 更新
 
-Windowsの `scripts/run-update-now.cmd` を実行します。保存済み認証情報を使い、最新コードの取得 → 楽天情報の取得 → Yahoo!ショッピング情報の取得（設定済みの場合）→ `products.json` の送信を行います。既存の毎日10:10のタスク登録をやり直す必要はありません。
+Windowsの `scripts/run-update-now.cmd` を実行します。保存済み認証情報を使い、最新コードの取得 → 楽天情報の取得 → Yahoo!ショッピング情報の取得 → Keepa情報の取得（後二者は設定時のみ）→ 公開前検証 → `products.json` の送信を行います。既存の毎日10:10のタスク登録をやり直す必要はありません。自動更新は、変更・ステージ済みファイルのない `main` ブランチでのみ実行します。
 
-完了時の `[PRICE RESULT] compared=N reference_only=M` が比較結果です。サイトへの送信成功と、価格比較の成立は別です。`compared=0` の場合は参考商品のみの更新です。
+`[PRICE RESULT] compared=N reference_only=M` は楽天取得段階の結果です。統合後の最終結果は `collection_summary` を確認してください。`[PUBLICATION RESULT] published=N history=confirmed` がGitHubへの送信と履歴確定の成功を表します。GitHub Pagesへの反映完了は別途確認が必要です。
+
+日次更新は公開用ファイルと価格履歴のコピーを `.local/update-*` に作って処理します。API取得・検証・送信が失敗した場合、更新前の `products.json` と履歴を維持します。履歴はGitHubへの送信成功後に確定します。送信成否不明、強制終了、送信成功後のローカル保存失敗の場合は復旧用データとロックを残し、次の自動更新を止めます。詳しくは [更新の保護と復旧](docs/update-safety.md) を参照してください。個別の `fetch-*.mjs` は診断用の低レベル処理で、この一括保護は `run-update-now.cmd` 経由の日次更新に適用されます。
 
 ## 比較の方法と範囲
 
@@ -32,13 +34,13 @@ Windowsの `scripts/run-update-now.cmd` を実行します。保存済み認証�
 ## 診断
 
 `products.json` の先頭要素に `collection_summary` を記録します。カテゴリーごとの検索件数・照合件数・除外理由が分かります。APIキー、リクエストURL、返却データ全体は記録しません。
-`shipping_included_compared` が送料込み表示で判定できた商品数、`shipping_price_only` が送料の確認を要する商品数です。`compared` は両方を含むショップ照合済み件数です。取得済みデータを送料条件で再判定した場合は `shipping_review` に記録し、取得日時を変えません。
+`shipping_included_compared` が送料込み表示で判定できた商品数、`shipping_price_only` が送料の確認を要する商品数です。`compared` は両方を含むショップ照合済み件数です。日次更新では統合後に全体・カテゴリー別の集計を再計算し、価格差が3倍を超える保留商品は `comparison_held` に分けます。保留商品の平均・スコア・履歴比較は公開しません。取得済みデータを送料条件で再判定した場合は `shipping_review` に記録し、取得日時を変えません。
 
 認証エラー・アクセス拒否・利用制限時は停止し、公開用ファイルは上書きしません。比較できないカテゴリーでは、安さを判定しない参考商品を表示します。
 
 ## 検証
 
-Node.js 20以降で `node --test scripts/tests/rakuten-comparison.test.mjs` を実行します。テストは実APIへ接続せず、平均価格がnullのケース、誤比較の除外、ショップの重複排除、障害時の保護、画面表示を確認します。実APIの取得成否はWindowsでの更新後に確認します。
+Node.js 20以降で `node --test scripts/tests/*.test.mjs` を実行します。テストは実APIへ接続せず、平均価格がnullのケース、誤比較の除外、ショップの重複排除、障害時の保護、画面表示を確認します。Git送信のテストも一時ディレクトリ内のローカルリポジトリだけを使用します。GitはPATH、WindowsのGitHub Desktop、または `TEST_GIT_PATH` から利用します。実APIの取得成否はWindowsでの更新後に確認します。
 
 ## 公式仕様
 
@@ -53,6 +55,8 @@ Node.js 20以降で `node --test scripts/tests/rakuten-comparison.test.mjs` を�
 Yahoo!デベロッパーネットワークでショッピングAPI用のClient IDを発行したら、Windowsで `scripts/setup-yahoo.ps1` を実行します。Client IDはWindowsユーザーに紐づく暗号化ファイルとして `%LOCALAPPDATA%\\KyouNoUriidashi\\yahoo-credentials.xml` に保存し、GitHubには保存しません。
 
 連携後は、楽天側でJANコードまで確認できた掲載商品についてYahoo!ショッピングの商品検索（v3）をJANコードで検索します。在庫あり・新品・同一JANの商品だけを追加し、ストア単位で最低価格を採用します。Yahoo!ショッピングAPIの送料コード2（送料無料）は送料込み表示として扱い、コード1（設定なし）・3（条件付き送料無料）は送料要確認として平均・スコアから除外します。ポイント・クーポンは価格比較に未反映です。
+
+Yahoo!の数量・中古・セット・選択式・関連部品・複数JANの判定は楽天と共通の照合関数を使います。商品名・説明・見出しに容量や個数の矛盾がある場合は除外します。基準商品に記載された容量・個数が確認できない場合、または基準の型番を商品名で完全一致確認できない場合も採用しません。条件が新品と明示されていない出品も除外します。照合済みJANと検証版を各出品に保存し、公開前に再確認します。保守的な判定のため、正しい商品でも店舗数が減る場合があります。
 
 Yahoo!ショッピングAPIは短時間の大量アクセスを避けるため、1リクエストごとに約1.1秒空けます。Yahoo連携が未設定でも楽天のみの更新は継続します。
 
