@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "products": [
+    {
+      "jan": "4580546890854",
+      "name": "Game Soft Nintendo Switch / スイカゲーム Special Edition",
+      "brand": "Aladdin X",
+      "model": "HAC-P-A5ETM",
+      "capacity": "",
+      "count": "",
+      "category": "ホビー",
+      "enabled": true
+    },
+    {
+      "jan": "4902530908763",
+      "name": "日立 業務・店舗用掃除機 CV-G1200",
+      "brand": "日立(HITACHI)",
+      "model": "CV-G1200",
+      "capacity": "",
+      "count": "",
+      "category": "家電",
+      "enabled": true
+    },
+    {
+      "jan": "4901301240309",
+      "name": "Curel(キュレル) 美白化粧水 I ややしっとり 140ml",
+      "brand": "キュレル",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "美容",
+      "enabled": true
+    },
+    {
+      "jan": "4901301411259",
+      "name": "キュレル 潤浸保湿 化粧水 I ややしっとり つめかえ用(130ml)",
+      "brand": "キュレル",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "美容",
+      "enabled": true
+    },
+    {
+      "jan": "4970941518598",
+      "name": "安心米 ドライカレー(100g)",
+      "brand": "安心米",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4902397847236",
+      "name": "シーザー 成犬用 おうちレシピ 鶏レバー 緑黄色野菜＆パスタ ドッグフード ウエット(100g)",
+      "brand": "シーザー(ドッグフード)(Cesar)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "ペット",
+      "enabled": true
+    },
+    {
+      "jan": "0669066991037",
+      "name": "ファンタジーワールド オーブンベークド トラディション キャットフード セミモイスト フィッシュ 100g",
+      "brand": "キャットフード",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "ペット",
+      "enabled": true
+    },
+    {
+      "jan": "4979105500165",
+      "name": "LT-201 備蓄用トイレットペーパー 10年保証 200m巻 12ロール入",
+      "brand": "備蓄用トイレットペーパー",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4987176318763",
+      "name": "アリエール 洗濯洗剤 MiRAi 超濃縮コンパクト洗剤 本体ボトル(460g)",
+      "brand": "アリエール MiRAi",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    }
+  ]
+}

@@ -26,7 +26,7 @@ function environment(overrides = {}) {
   return { ...process.env, RAKUTEN_APPLICATION_ID: "dry-fixture-app", RAKUTEN_ACCESS_KEY: "dry-fixture-key",
     YAHOO_CLIENT_ID: "dry-fixture-client", KEEPA_API_KEY: "",
     RAKUTEN_AFFILIATE_ID: "", YAHOO_AFFILIATE_ID: "", AMAZON_ASSOCIATE_TAG: "",
-    RAKUTEN_REQUEST_INTERVAL_MS: "0", YAHOO_REQUEST_INTERVAL_MS: "0",
+    RAKUTEN_REQUEST_INTERVAL_MS: "0", YAHOO_REQUEST_INTERVAL_MS: "2200",
     MOCK_SCENARIO: "", MOCK_UPDATE_FAILURE: "", MOCK_YAHOO_REJECTIONS: "1", ...overrides };
 }
 function fixtureStage(name, env) {
@@ -69,13 +69,13 @@ test("dry-run collects and validates without publication, overrides output paths
   assert.deepEqual(await readdir(join(config.repositoryPath, ".local")), []);
 });
 
-test("configured Keepa runs after Yahoo in dry-run", async () => {
+test("configured Keepa is forcibly skipped in dry-run", async () => {
   const config = await setup();
   const stages = [];
-  const result = await runDryRun({ ...config, environment: environment({ KEEPA_API_KEY: "dry-fixture-keepa" }),
+  const result = await runDryRun({ ...config, environment: environment({ KEEPA_API_KEY: "dry-fixture-keepa", MOCK_UPDATE_FAILURE: "keepa" }),
     runStage: (name, env) => { stages.push(name); return fixtureStage(name, env); } });
   assert.equal(result.ok, true);
-  assert.deepEqual(stages, ["rakuten", "yahoo", "keepa"]);
+  assert.deepEqual(stages, ["rakuten", "yahoo"]);
   await assertUntouched(config);
 });
 
@@ -88,7 +88,7 @@ test("dry-run with no production history does not create its file or parent dire
   await assertUntouched(config);
 });
 
-for (const failure of ["rakuten", "yahoo", "keepa", "validation"]) {
+for (const failure of ["rakuten", "yahoo", "validation"]) {
   test(`dry-run ${failure} failure never changes live files and removes staging`, async () => {
     const config = await setup();
     const result = await runDryRun({ ...config,
@@ -96,7 +96,7 @@ for (const failure of ["rakuten", "yahoo", "keepa", "validation"]) {
         MOCK_SCENARIO: failure === "rakuten" ? "denied" : "" }),
       runStage: async (name, env) => {
         fixtureStage(name, env);
-        if (failure === "validation" && name === "keepa") {
+        if (failure === "validation" && name === "yahoo") {
           const products = JSON.parse(await readFile(env.KEEPA_PRODUCTS_PATH, "utf8"));
           products[0].offers[0].price = 0;
           await writeFile(env.KEEPA_PRODUCTS_PATH, JSON.stringify(products));
@@ -199,4 +199,31 @@ test("Windows launcher decrypts saved credentials, ignores inherited Keepa, and 
   }
   await assert.rejects(access(join(credentials, "update.log")), { code: "ENOENT" });
   await assertUntouched(config);
+});
+
+test('dry-run rejects too-fast Yahoo settings before either API stage', async () => {
+  for (const target of ['', '20']) {
+    const config = await setup();
+    const result = await runDryRun({ ...config,
+      environment: environment({ TARGET_PRODUCT_COUNT: target, YAHOO_REQUEST_INTERVAL_MS: '1100' }),
+      runStage: () => assert.fail('invalid rate must be rejected before network access') });
+    assert.equal(result.ok, false);
+    await assertUntouched(config);
+  }
+});
+
+test('Yahoo 429 stops dry-run without retry/publication and retains only safe timing metrics', async () => {
+  const config = await setup();
+  const stages = [];
+  const result = await runDryRun({ ...config, environment: environment({ MOCK_UPDATE_FAILURE: 'yahoo-429' }),
+    runStage: (name, env) => { stages.push(name); return fixtureStage(name, env); } });
+  assert.equal(result.ok, false);
+  assert.deepEqual(stages, ['rakuten', 'yahoo']);
+  assert.equal(result.yahooTiming.requests, 2);
+  assert.equal(result.yahooTiming.rateLimited, 1);
+  assert.equal(result.yahooTiming.averageIntervalMs, 2200);
+  assert.equal(result.yahooTiming.retryAfterSeconds, 65);
+  assert.doesNotMatch(JSON.stringify(result), /https?:|dry-fixture|appid/);
+  await assertUntouched(config);
+  assert.deepEqual(await readdir(join(config.repositoryPath, '.local')), []);
 });

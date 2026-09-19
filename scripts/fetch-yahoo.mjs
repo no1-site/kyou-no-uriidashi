@@ -1,22 +1,27 @@
+import { createYahooTransport, yahooInterval } from "./lib/yahoo-rate-limit.mjs";
+import { writeFileSync } from "node:fs";
+import { createBudgetedFetch, recordResponseError } from "./lib/api-budget.mjs";
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validJAN } from "./lib/rakuten-comparison.mjs";
 import { mergeYahooOffers, yahooComparisonVersion } from "./lib/yahoo-comparison.mjs";
 
+let yahooTiming;
+const transport = createYahooTransport({ intervalMs: yahooInterval(process.env.YAHOO_REQUEST_INTERVAL_MS),
+  report: metrics => {
+    yahooTiming = metrics;
+    if (process.env.YAHOO_METRICS_PATH) writeFileSync(process.env.YAHOO_METRICS_PATH, JSON.stringify(metrics));
+  } });
+const apiFetch = createBudgetedFetch("yahoo", process.env, transport);
 const clientId = process.env.YAHOO_CLIENT_ID;
 const affiliateId = process.env.YAHOO_AFFILIATE_ID || "";
 if (!clientId) throw new Error("Yahoo Client ID is missing.");
 
 const repositoryPath = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const productsPath = process.env.YAHOO_PRODUCTS_PATH || resolve(repositoryPath, "products.json");
-const requestInterval = Number(process.env.YAHOO_REQUEST_INTERVAL_MS ?? 1100);
 const endpoint = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch";
 const checkedAt = new Date().toISOString();
-
-function sleep(ms) {
-  return Number.isFinite(ms) && ms > 0 ? new Promise(done => setTimeout(done, ms)) : Promise.resolve();
-}
 
 async function atomicJSON(path, value) {
   await mkdir(dirname(path), { recursive: true });
@@ -25,8 +30,7 @@ async function atomicJSON(path, value) {
   await rename(temporary, path);
 }
 
-async function searchYahoo(jan, requestNo) {
-  if (requestNo > 0) await sleep(requestInterval);
+async function searchYahoo(jan) {
 
   const url = new URL(endpoint);
   url.searchParams.set("appid", clientId);
@@ -43,7 +47,7 @@ async function searchYahoo(jan, requestNo) {
 
   let response;
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    response = await apiFetch(url, { signal: AbortSignal.timeout(15000) });
   } catch {
     throw new Error("Yahoo network_or_timeout");
   }
@@ -56,10 +60,11 @@ async function searchYahoo(jan, requestNo) {
   try {
     data = await response.json();
   } catch {
+    recordResponseError();
     throw new Error("Yahoo invalid_json");
   }
 
-  if (data?.error || data?.errors || !Array.isArray(data?.hits)) throw new Error("Yahoo invalid_response");
+  if (data?.error || data?.errors || !Array.isArray(data?.hits)) { recordResponseError(); throw new Error("Yahoo invalid_response"); }
   return data.hits;
 }
 
@@ -80,7 +85,8 @@ for (const product of products) {
     continue;
   }
 
-  const hits = await searchYahoo(jan, requests++);
+  const hits = await searchYahoo(jan);
+  requests++;
   const merged = mergeYahooOffers(product, hits);
   for (const [reason, count] of Object.entries(merged.rejected)) {
     excluded[reason] = (excluded[reason] || 0) + count;
@@ -100,6 +106,7 @@ if (updated.length) {
       version: yahooComparisonVersion,
       checked_at: checkedAt,
       requests,
+      timing: yahooTiming,
       matched_products: matchedProducts,
       added_offers: addedOffers,
       excluded

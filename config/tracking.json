@@ -1,0 +1,17 @@
+{
+  "productionMode": "legacy",
+  "productionTarget": 12,
+  "dryRunTargets": [20, 50, 100],
+  "maxSeconds": 1020,
+  "rakutenRequests": 380,
+  "yahooRequests": 100,
+  "candidateMultiplier": 3,
+  "categories": [
+    { "category": "日用品", "weight": 30, "keywords": ["洗濯洗剤", "トイレットペーパー", "食器用洗剤", "ティッシュ"] },
+    { "category": "食品", "weight": 25, "keywords": ["コーヒー", "お米", "紅茶", "パスタ"] },
+    { "category": "美容", "weight": 15, "keywords": ["美容液", "化粧水", "シャンプー", "洗顔"] },
+    { "category": "家電", "weight": 10, "keywords": ["掃除機", "ドライヤー", "電気ケトル", "炊飯器"] },
+    { "category": "ペット", "weight": 10, "keywords": ["ドッグフード", "キャットフード", "猫砂", "ペットシーツ"] },
+    { "category": "ホビー", "weight": 10, "keywords": ["ゲームソフト", "フィギュア", "プラモデル", "ボードゲーム"] }
+  ]
+}

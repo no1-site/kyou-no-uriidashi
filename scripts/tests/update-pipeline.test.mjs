@@ -21,7 +21,7 @@ async function setup() {
 
 function environment(overrides = {}) {
   return { ...process.env, RAKUTEN_APPLICATION_ID: "fixture-app", RAKUTEN_ACCESS_KEY: "fixture-key",
-    RAKUTEN_AFFILIATE_ID: "", RAKUTEN_REQUEST_INTERVAL_MS: "0", YAHOO_REQUEST_INTERVAL_MS: "0",
+    RAKUTEN_AFFILIATE_ID: "", RAKUTEN_REQUEST_INTERVAL_MS: "0", YAHOO_REQUEST_INTERVAL_MS: "2200",
     YAHOO_CLIENT_ID: "fixture-yahoo", YAHOO_AFFILIATE_ID: "", KEEPA_API_KEY: "fixture-keepa", AMAZON_ASSOCIATE_TAG: "",
     MOCK_SCENARIO: "", MOCK_UPDATE_FAILURE: "", ...overrides };
 }
@@ -49,7 +49,7 @@ test("Yahoo API failure on the second product preserves the input file byte-for-
   await assertUnchanged(config);
 });
 
-for (const failure of ["rakuten", "yahoo", "yahoo-invalid", "keepa", "keepa-invalid"]) {
+for (const failure of ["rakuten", "yahoo", "yahoo-429", "yahoo-invalid", "keepa", "keepa-invalid"]) {
   test(`${failure} failure leaves live products and history unchanged and never publishes`, async () => {
     const config = await setup();
     let published = false;
