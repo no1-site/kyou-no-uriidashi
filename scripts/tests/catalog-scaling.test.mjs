@@ -25,11 +25,11 @@ function comparison(identity) {
 }
 
 test("category distribution and 20/50/100 allocation are exact and configurable", () => {
-  assert.deepEqual(allocateCategories(config,100).map(c=>c.quota),[30,25,15,10,10,10]);
-  assert.deepEqual(allocateCategories(config,20).map(c=>c.quota),[6,5,3,2,2,2]);
-  assert.deepEqual(allocateCategories(config,50).map(c=>c.quota),[15,13,7,5,5,5]);
+  assert.deepEqual(allocateCategories(config,100).map(c=>c.quota),[35,15,20,10,10,10]);
+  assert.deepEqual(allocateCategories(config,20).map(c=>c.quota),[7,3,4,2,2,2]);
+  assert.deepEqual(allocateCategories(config,50).map(c=>c.quota),[18,7,10,5,5,5]);
   const alternative=structuredClone(config); alternative.categories[0].weight=50;
-  assert.notEqual(allocateCategories(alternative,100)[0].quota,30);
+  assert.notEqual(allocateCategories(alternative,100)[0].quota,35);
   assert.throws(()=>allocateCategories(config,101));
 });
 test("catalog rejects same JAN within and across categories, prices and malformed JAN",()=>{
@@ -130,7 +130,7 @@ test("100-product UI renders first 20, load-more to 100, category resets and kee
   assert.equal(count(),20);
   for(const expected of [40,60,80,100]){click();assert.equal(count(),expected);}
   assert.doesNotMatch(nodes.get('#dealGrid').innerHTML,/class="load-more"/);
-  vm.runInContext("render('食品')",context);assert.equal(count(),20);click();assert.equal(count(),25);
+  vm.runInContext("render('食品')",context);assert.equal(count(),15);
   assert.match(nodes.get('#dealGrid').innerHTML,/送料込み表示|offer-table/);
   assert.match(nodes.get('#dealGrid').innerHTML,/Amazonで価格を確認/);
 });
