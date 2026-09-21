@@ -45,7 +45,7 @@ export async function collectStagedProducts({ staging, historyPath, previous, en
   const stagedEnvironment = { ...environment,
     TRACKING_PLAN_PATH: "", COLLECTION_METRICS_PATH: "", COLLECTION_DEADLINE: "",
     RAKUTEN_OUTPUT_PATH: stagedProducts, RAKUTEN_HISTORY_PATH: stagedHistory,
-    YAHOO_PRODUCTS_PATH: stagedProducts, KEEPA_PRODUCTS_PATH: stagedProducts,
+    YAHOO_PRODUCTS_PATH: stagedProducts, VALUECOMMERCE_PRODUCTS_PATH: stagedProducts, KEEPA_PRODUCTS_PATH: stagedProducts,
     YAHOO_METRICS_PATH: join(staging, "yahoo-metrics.json"), YAHOO_REQUEST_INTERVAL_MS: String(yahooRequestInterval),
     ...(plan ? { TRACKING_PLAN_PATH: join(staging, "tracking-plan.json"), COLLECTION_METRICS_PATH: join(staging, "metrics.json"),
       COLLECTION_DEADLINE: String(Date.now() + plan.config.maxSeconds * 1000), KEEPA_API_KEY: "",
@@ -56,6 +56,7 @@ export async function collectStagedProducts({ staging, historyPath, previous, en
     throw new Error("Rakuten collection contained API errors; publication stopped.");
   }
   if (environment.YAHOO_CLIENT_ID) await runStage("yahoo", stagedEnvironment);
+  if (environment.VALUECOMMERCE_TOKEN && environment.VALUECOMMERCE_ALLOWED_EC_CODES) await runStage("valuecommerce", stagedEnvironment);
   if (stagedEnvironment.KEEPA_API_KEY) await runStage("keepa", stagedEnvironment);
   const products = finalizeProducts(JSON.parse(await readFile(stagedProducts, "utf8")));
   validatePublication(products, previous);
