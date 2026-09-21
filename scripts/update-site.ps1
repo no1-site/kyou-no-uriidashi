@@ -65,6 +65,7 @@ try {
         $valueCommerceSettings = Import-Clixml -Path $valueCommerceConfigPath
         $env:VALUECOMMERCE_TOKEN = Reveal-SecureValue $valueCommerceSettings.Token
         $env:VALUECOMMERCE_ALLOWED_EC_CODES = [string]$valueCommerceSettings.AllowedEcCodes
+        $env:VALUECOMMERCE_ALLOWED_MERCHANTS = [string]$valueCommerceSettings.AllowedMerchants
     }
 
     Write-UpdateLog "Starting update."
@@ -111,6 +112,7 @@ finally {
     Remove-Item Env:AMAZON_ASSOCIATE_TAG -ErrorAction SilentlyContinue
     Remove-Item Env:VALUECOMMERCE_TOKEN -ErrorAction SilentlyContinue
     Remove-Item Env:VALUECOMMERCE_ALLOWED_EC_CODES -ErrorAction SilentlyContinue
+    Remove-Item Env:VALUECOMMERCE_ALLOWED_MERCHANTS -ErrorAction SilentlyContinue
 
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName

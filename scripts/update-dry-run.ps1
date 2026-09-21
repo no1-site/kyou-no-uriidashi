@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 $OutputEncoding = [Console]::OutputEncoding
 $started = [System.Diagnostics.Stopwatch]::StartNew()
 $exitCode = 1
-$credentialNames = @("RAKUTEN_APPLICATION_ID", "RAKUTEN_ACCESS_KEY", "RAKUTEN_AFFILIATE_ID", "YAHOO_CLIENT_ID", "YAHOO_AFFILIATE_ID", "KEEPA_API_KEY", "AMAZON_ASSOCIATE_TAG", "DRY_RUN_HISTORY_PATH", "NODE_OPTIONS", "NODE_DEBUG", "TARGET_PRODUCT_COUNT", "VALUECOMMERCE_TOKEN", "VALUECOMMERCE_ALLOWED_EC_CODES")
+$credentialNames = @("RAKUTEN_APPLICATION_ID", "RAKUTEN_ACCESS_KEY", "RAKUTEN_AFFILIATE_ID", "YAHOO_CLIENT_ID", "YAHOO_AFFILIATE_ID", "KEEPA_API_KEY", "AMAZON_ASSOCIATE_TAG", "DRY_RUN_HISTORY_PATH", "NODE_OPTIONS", "NODE_DEBUG", "TARGET_PRODUCT_COUNT", "VALUECOMMERCE_TOKEN", "VALUECOMMERCE_ALLOWED_EC_CODES", "VALUECOMMERCE_ALLOWED_MERCHANTS")
 
 try {
     if ($Sequence -and $TargetProductCount) { throw "Choose one dry-run mode." }
@@ -21,6 +21,7 @@ try {
         $valueCommerce = Import-Clixml -LiteralPath $valueCommercePath
         $env:VALUECOMMERCE_TOKEN = [System.Net.NetworkCredential]::new("", $valueCommerce.Token).Password
         $env:VALUECOMMERCE_ALLOWED_EC_CODES = [string]$valueCommerce.AllowedEcCodes
+        $env:VALUECOMMERCE_ALLOWED_MERCHANTS = [string]$valueCommerce.AllowedMerchants
     }
     # Keepa is deliberately never loaded or enabled in dry-run.
     if ($TargetProductCount) { $env:TARGET_PRODUCT_COUNT = [string]$TargetProductCount }

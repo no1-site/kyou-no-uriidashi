@@ -56,7 +56,7 @@ export async function collectStagedProducts({ staging, historyPath, previous, en
     throw new Error("Rakuten collection contained API errors; publication stopped.");
   }
   if (environment.YAHOO_CLIENT_ID) await runStage("yahoo", stagedEnvironment);
-  if (environment.VALUECOMMERCE_TOKEN && environment.VALUECOMMERCE_ALLOWED_EC_CODES) await runStage("valuecommerce", stagedEnvironment);
+  if (environment.VALUECOMMERCE_TOKEN && (environment.VALUECOMMERCE_ALLOWED_EC_CODES || environment.VALUECOMMERCE_ALLOWED_MERCHANTS)) await runStage("valuecommerce", stagedEnvironment);
   if (stagedEnvironment.KEEPA_API_KEY) await runStage("keepa", stagedEnvironment);
   const products = finalizeProducts(JSON.parse(await readFile(stagedProducts, "utf8")));
   validatePublication(products, previous);
