@@ -54,6 +54,9 @@ try {
     if (Test-Path $yahooConfigPath) {
         $yahooSettings = Import-Clixml -Path $yahooConfigPath
         $env:YAHOO_CLIENT_ID = Reveal-SecureValue $yahooSettings.ClientId
+        if ($yahooSettings.PSObject.Properties.Name -contains "AffiliateId" -and $yahooSettings.AffiliateId) {
+            $env:YAHOO_AFFILIATE_ID = Reveal-SecureValue $yahooSettings.AffiliateId
+        }
     }
 
     if (Test-Path $keepaConfigPath) {
