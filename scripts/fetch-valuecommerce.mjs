@@ -7,9 +7,14 @@ import { mergeValueCommerceOffers, valueCommerceComparisonVersion } from "./lib/
 const token = String(process.env.VALUECOMMERCE_TOKEN || "").trim();
 const allowedEcCodes = String(process.env.VALUECOMMERCE_ALLOWED_EC_CODES || "")
   .split(",").map(value => value.trim()).filter(Boolean);
+const allowedMerchants = String(process.env.VALUECOMMERCE_ALLOWED_MERCHANTS || "")
+  .split(",").map(value => value.trim()).filter(Boolean);
 if (!token) throw new Error("ValueCommerce token is missing.");
-if (!allowedEcCodes.length || allowedEcCodes.some(code => !/^[A-Za-z0-9]+$/.test(code))) {
-  throw new Error("ValueCommerce allowed EC codes are missing or invalid.");
+if (allowedEcCodes.some(code => !/^[A-Za-z0-9]+$/.test(code))) {
+  throw new Error("ValueCommerce allowed EC codes are invalid.");
+}
+if (!allowedEcCodes.length && !allowedMerchants.length) {
+  throw new Error("ValueCommerce allowed merchants are missing.");
 }
 
 const repositoryPath = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,11 +34,12 @@ async function atomicJSON(path, value) {
   await rename(temporary, path);
 }
 
-async function searchValueCommerce(jan) {
+async function searchValueCommerce(jan, merchant = "") {
   const url = new URL(endpoint);
   url.searchParams.set("token", token);
   url.searchParams.set("keyword", jan);
-  url.searchParams.set("ec_code", allowedEcCodes.join(","));
+  if (allowedEcCodes.length) url.searchParams.set("ec_code", allowedEcCodes.join(","));
+  if (merchant) url.searchParams.set("merchant", merchant);
   url.searchParams.set("format", "json");
   url.searchParams.set("results_per_page", "50");
   url.searchParams.set("sort_by", "price");
@@ -76,10 +82,14 @@ for (const product of products) {
     updated.push(product);
     continue;
   }
-  if (requests) await sleep(intervalMs);
-  const items = await searchValueCommerce(jan);
-  requests++;
-  const merged = mergeValueCommerceOffers(product, items, allowedEcCodes);
+  const searches = allowedEcCodes.length ? [""] : allowedMerchants;
+  const items = [];
+  for (const merchant of searches) {
+    if (requests) await sleep(intervalMs);
+    items.push(...await searchValueCommerce(jan, merchant));
+    requests++;
+  }
+  const merged = mergeValueCommerceOffers(product, items, allowedEcCodes, allowedMerchants);
   for (const [reason, count] of Object.entries(merged.rejected)) {
     excluded[reason] = (excluded[reason] || 0) + count;
   }
