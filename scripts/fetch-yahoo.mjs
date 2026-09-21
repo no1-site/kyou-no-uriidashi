@@ -6,6 +6,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validJAN } from "./lib/rakuten-comparison.mjs";
 import { mergeYahooOffers, yahooComparisonVersion } from "./lib/yahoo-comparison.mjs";
+import { buildYahooItemSearchURL } from "./lib/yahoo-api.mjs";
 
 let yahooTiming;
 const transport = createYahooTransport({ intervalMs: yahooInterval(process.env.YAHOO_REQUEST_INTERVAL_MS),
@@ -20,7 +21,6 @@ if (!clientId) throw new Error("Yahoo Client ID is missing.");
 
 const repositoryPath = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const productsPath = process.env.YAHOO_PRODUCTS_PATH || resolve(repositoryPath, "products.json");
-const endpoint = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch";
 const checkedAt = new Date().toISOString();
 
 async function atomicJSON(path, value) {
@@ -32,18 +32,7 @@ async function atomicJSON(path, value) {
 
 async function searchYahoo(jan) {
 
-  const url = new URL(endpoint);
-  url.searchParams.set("appid", clientId);
-  url.searchParams.set("jan_code", jan);
-  url.searchParams.set("results", "50");
-  url.searchParams.set("in_stock", "true");
-  url.searchParams.set("condition", "new");
-  url.searchParams.set("sort", "+price");
-  url.searchParams.set("image_size", "300");
-  if (affiliateId) {
-    url.searchParams.set("affiliate_type", "vc");
-    url.searchParams.set("affiliate_id", affiliateId);
-  }
+  const url = buildYahooItemSearchURL({ clientId, affiliateId, jan });
 
   let response;
   try {
