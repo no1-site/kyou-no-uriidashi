@@ -900,6 +900,56 @@
       "count": "",
       "category": "家電",
       "enabled": true
+    },
+    {
+      "jan": "4901085122136",
+      "name": "伊藤園 リラックスジャスミン茶 ティーバッグ(5.0g*30袋入)",
+      "brand": "リラックスジャスミンティー",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4902203523767",
+      "name": "リプトン ストロベリールイボス ティーバッグ(15袋入)",
+      "brand": "リプトン(Lipton)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4901111507531",
+      "name": "AGF ちょっと贅沢な珈琲店 インスタントコーヒー スペシャルブレンド 袋(60g)",
+      "brand": "味の素AGF",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4901012049352",
+      "name": "MCC ゲイロード レトルトカレー ホタテとナッツのカレー 180g",
+      "brand": "エム・シーシー食品",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4901111844612",
+      "name": "AGF ブレンディ インスタントコーヒー スティック ブラック 毎日の腸活コーヒー(56本入)",
+      "brand": "ブレンディ(Blendy)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
     }
   ]
 }
