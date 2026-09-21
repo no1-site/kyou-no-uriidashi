@@ -155,10 +155,15 @@ function updateSignal() {
       Number(item?.collection_summary?.keepa?.added_offers || 0) > 0 ||
       item?.offers?.some?.(offer => offer?.marketplace_code === "amazon")
     );
+    const valueCommerceActive = deals.some(item =>
+      Number(item?.collection_summary?.valuecommerce?.added_offers || 0) > 0 ||
+      item?.offers?.some?.(offer => offer?.marketplace_code === "valuecommerce")
+    );
     const marketplaces = [
       "楽天市場",
       ...(yahooActive ? ["Yahoo!ショッピング"] : []),
-      ...(amazonActive ? ["Amazon.co.jp"] : [])
+      ...(amazonActive ? ["Amazon.co.jp"] : []),
+      ...(valueCommerceActive ? ["提携EC"] : [])
     ];
     headingElement.textContent = comparedDeals.length
       ? marketplaces.length === 1

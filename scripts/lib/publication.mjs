@@ -1,8 +1,9 @@
 import { applyShippingPolicy, effectivePostage, includedOffers } from "../../shipping-policy.mjs";
 import { validJAN, httpsURL, validationVersion } from "./rakuten-comparison.mjs";
 import { yahooComparisonVersion } from "./yahoo-comparison.mjs";
+import { valueCommerceComparisonVersion } from "./valuecommerce-comparison.mjs";
 
-const marketNames = { rakuten: "楽天市場", yahoo: "Yahoo!ショッピング", amazon: "Amazon.co.jp" };
+const marketNames = { rakuten: "楽天市場", yahoo: "Yahoo!ショッピング", amazon: "Amazon.co.jp", valuecommerce: "提携EC" };
 const minimumRetainedRatio = 0.7;
 // An operational review limit, not a statement about a product's fair value.
 export const maximumPublicationPrice = 100_000_000;
@@ -13,7 +14,8 @@ function validPrice(price) {
 }
 function marketCode(offer) {
   return offer.marketplace_code || (offer.shop_code?.startsWith("yahoo:") ? "yahoo"
-    : offer.shop_code?.startsWith("amazon:") ? "amazon" : "rakuten");
+    : offer.shop_code?.startsWith("amazon:") ? "amazon"
+      : offer.shop_code?.startsWith("valuecommerce:") ? "valuecommerce" : "rakuten");
 }
 
 export function priceSpreadHeld(product) {
@@ -56,6 +58,7 @@ function validateRawProducts(products) {
         fail("missing_identity_evidence");
       }
       if (market === "yahoo" && offer.identity_validation_version !== yahooComparisonVersion) fail("legacy_yahoo_validation");
+      if (market === "valuecommerce" && offer.identity_validation_version !== valueCommerceComparisonVersion) fail("legacy_valuecommerce_validation");
     }
   }
 }

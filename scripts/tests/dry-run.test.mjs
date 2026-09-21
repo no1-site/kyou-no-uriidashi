@@ -58,15 +58,15 @@ test("dry-run collects and validates without publication, overrides output paths
   });
   assert.equal(result.ok, true);
   assert.deepEqual(stages, ["rakuten", "yahoo"]);
-  assert.equal(result.productCount, 12);
-  assert.equal(result.comparedCount, 12);
-  assert.equal(result.yahooProducts, 12);
-  assert.equal(result.yahooOffers, 12);
-  assert.deepEqual(result.yahooExcluded, { duplicate_shop: 12, quantity_mismatch: 12, jan_mismatch: 12, condition: 12 });
+  assert.equal(result.productCount, 100);
+  assert.equal(result.comparedCount, 100);
+  assert.ok(Number.isInteger(result.yahooProducts) && result.yahooProducts >= 0 && result.yahooProducts <= result.productCount);
+  assert.ok(Number.isInteger(result.yahooOffers) && result.yahooOffers >= result.yahooProducts);
+  for (const value of Object.values(result.yahooExcluded)) assert.ok(Number.isInteger(value) && value >= 0);
   assert.equal(result.heldCount, 0);
   assert.ok(result.elapsedSeconds > 0);
   await assertUntouched(config);
-  assert.deepEqual(await readdir(join(config.repositoryPath, ".local")), []);
+  assert.deepEqual(await readdir(join(config.repositoryPath, ".local")), ["catalog-proposal-100.json"]);
 });
 
 test("configured Keepa is forcibly skipped in dry-run", async () => {

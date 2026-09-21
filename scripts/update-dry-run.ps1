@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 $OutputEncoding = [Console]::OutputEncoding
 $started = [System.Diagnostics.Stopwatch]::StartNew()
 $exitCode = 1
-$credentialNames = @("RAKUTEN_APPLICATION_ID", "RAKUTEN_ACCESS_KEY", "RAKUTEN_AFFILIATE_ID", "YAHOO_CLIENT_ID", "YAHOO_AFFILIATE_ID", "KEEPA_API_KEY", "AMAZON_ASSOCIATE_TAG", "DRY_RUN_HISTORY_PATH", "NODE_OPTIONS", "NODE_DEBUG", "TARGET_PRODUCT_COUNT")
+$credentialNames = @("RAKUTEN_APPLICATION_ID", "RAKUTEN_ACCESS_KEY", "RAKUTEN_AFFILIATE_ID", "YAHOO_CLIENT_ID", "YAHOO_AFFILIATE_ID", "KEEPA_API_KEY", "AMAZON_ASSOCIATE_TAG", "DRY_RUN_HISTORY_PATH", "NODE_OPTIONS", "NODE_DEBUG", "TARGET_PRODUCT_COUNT", "VALUECOMMERCE_TOKEN", "VALUECOMMERCE_ALLOWED_EC_CODES")
 
 try {
     if ($Sequence -and $TargetProductCount) { throw "Choose one dry-run mode." }
@@ -16,6 +16,12 @@ try {
     $env:RAKUTEN_APPLICATION_ID = [System.Net.NetworkCredential]::new("", $rakuten.ApplicationId).Password
     $env:RAKUTEN_ACCESS_KEY = [System.Net.NetworkCredential]::new("", $rakuten.AccessKey).Password
     $env:YAHOO_CLIENT_ID = [System.Net.NetworkCredential]::new("", $yahoo.ClientId).Password
+    $valueCommercePath = Join-Path $configDirectory "valuecommerce-credentials.xml"
+    if (Test-Path $valueCommercePath) {
+        $valueCommerce = Import-Clixml -LiteralPath $valueCommercePath
+        $env:VALUECOMMERCE_TOKEN = [System.Net.NetworkCredential]::new("", $valueCommerce.Token).Password
+        $env:VALUECOMMERCE_ALLOWED_EC_CODES = [string]$valueCommerce.AllowedEcCodes
+    }
     # Keepa is deliberately never loaded or enabled in dry-run.
     if ($TargetProductCount) { $env:TARGET_PRODUCT_COUNT = [string]$TargetProductCount }
     $env:DRY_RUN_HISTORY_PATH = Join-Path $configDirectory "price-history.json"
@@ -42,5 +48,6 @@ finally {
     $rakuten = $null
     $yahoo = $null
     $keepa = $null
+    $valueCommerce = $null
 }
 exit $exitCode

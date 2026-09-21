@@ -21,13 +21,13 @@ const failureLabels = {
   credentials: "保存済みの楽天・Yahoo認証情報を確認してください",
   busy: "別の更新が実行中、または中断済みです",
   rakuten: "楽天の取得に失敗しました", yahoo: "Yahooの取得に失敗しました",
-  keepa: "Keepaの取得に失敗しました", validation: "公開前検証に失敗しました",
+  valuecommerce: "提携ECの取得に失敗しました", keepa: "Keepaの取得に失敗しました", validation: "公開前検証に失敗しました",
   changed: "実行中に本番データが別の処理で変更されました",
   failed: "ドライランを完了できませんでした"
 };
 
 export function runQuietFetchStage(name, environment) {
-  if (!["rakuten", "yahoo", "keepa"].includes(name)) throw new Error("Invalid dry-run stage.");
+  if (!["rakuten", "yahoo", "valuecommerce", "keepa"].includes(name)) throw new Error("Invalid dry-run stage.");
   return new Promise((done, reject) => {
     // Never pipe API progress/errors to the console or a log file. In particular,
     // Node exceptions/debug output cannot reveal a request URL or credentials.
@@ -81,7 +81,11 @@ export async function runDryRun({ repositoryPath, historyPath, environment = pro
     const summary = products[0].collection_summary;
     result = { ok: true, productCount: products.length, comparedCount: summary.compared,
       yahooProducts: summary.yahoo?.matched_products || 0, yahooOffers: summary.yahoo?.added_offers || 0,
-      yahooExcluded: summary.yahoo?.excluded || {}, heldCount: summary.comparison_held,
+      yahooExcluded: summary.yahoo?.excluded || {},
+      valueCommerceProducts: summary.valuecommerce?.matched_products || 0,
+      valueCommerceOffers: summary.valuecommerce?.added_offers || 0,
+      valueCommerceMerchants: summary.valuecommerce?.merchants || [],
+      heldCount: summary.comparison_held,
       ...(summary.target ? { target: summary.target,
         shippingCompared: summary.shipping_included_compared, productBytes: Buffer.byteLength(productBytes),
         categories: summary.categories } : {}) };
@@ -133,6 +137,9 @@ export function formatDryRunReport(result) {
     `Yahoo実効平均間隔：${Number.isFinite(result.yahooTiming?.averageIntervalMs) ? result.yahooTiming.averageIntervalMs.toFixed(1) + "ms" : "未計測"}`,
     `Yahoo実行時間：${Number.isFinite(result.yahooTiming?.elapsedSeconds) ? result.yahooTiming.elapsedSeconds.toFixed(1) + "秒" : "未計測"}`,
     `Yahoo Retry-After：${Number.isFinite(result.yahooTiming?.retryAfterSeconds) ? result.yahooTiming.retryAfterSeconds + "秒（記録のみ）" : "有効な指定なし"}`,
+    `提携EC追加商品数：${count(result.valueCommerceProducts)}`,
+    `提携EC追加出品数：${count(result.valueCommerceOffers)}`,
+    `提携ECショップ：${Array.isArray(result.valueCommerceMerchants) && result.valueCommerceMerchants.length ? result.valueCommerceMerchants.join("、") : "なし"}`,
     `比較を試みた商品数：${count(result.metrics?.attempted)}`,
     `送料込み比較可能商品数：${count(result.shippingCompared)}`,
     `APIエラー数：${count(result.metrics?.apiErrors)}`,
