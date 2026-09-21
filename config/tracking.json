@@ -1,6 +1,6 @@
 {
-  "productionMode": "legacy",
-  "productionTarget": 12,
+  "productionMode": "catalog",
+  "productionTarget": 100,
   "dryRunTargets": [
     20,
     50,
