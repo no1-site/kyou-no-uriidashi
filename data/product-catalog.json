@@ -950,6 +950,66 @@
       "count": "",
       "category": "食品",
       "enabled": true
+    },
+    {
+      "jan": "4582469506782",
+      "name": "ランドリン WASH 洗濯洗剤 濃縮液体 クラシックフローラル(410g)",
+      "brand": "ランドリン",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4901301325495",
+      "name": "ソフィーナ グレイス 高保湿化粧水（薬用） しっとり(140ml)",
+      "brand": "ソフィーナグレイス",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "美容",
+      "enabled": true
+    },
+    {
+      "jan": "4903301350781",
+      "name": "ナノックスワン NANOXone PRO 洗濯洗剤 詰め替え 超特大(1070g)",
+      "brand": "NANOXone",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4987176304148",
+      "name": "さらさ 洗濯洗剤 液体 ほのかでやさしい柑橘系の香り 詰め替え(1260g)",
+      "brand": "さらさ",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4987176318886",
+      "name": "アリエール 洗濯洗剤 MiRAi 超濃縮コンパクト洗剤 部屋干し＆スポーツ 詰替(980g)",
+      "brand": "アリエール MiRAi",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4901301403940",
+      "name": "キュキュット 食器用洗剤 ナチュラルデイズ ワイルドフラワー＆ハーブ 本体(240ml)",
+      "brand": "キュキュット",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
     }
   ]
 }
