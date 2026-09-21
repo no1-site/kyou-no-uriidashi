@@ -14,7 +14,7 @@
   <meta name="description" content="物価高だからこそ、安いを探す時間まで節約。同一商品のショップ別価格を毎日比較し、今日の買い物判断を助ける『今日の売り出し』。">
   <meta name="theme-color" content="#111318">
   <title>今日の売り出し｜物価高だからこそ、安いを探す時間まで節約。</title>
-  <link rel="stylesheet" href="styles.css?v=shops1">
+  <link rel="stylesheet" href="styles.css?v=pricedrop1">
 </head>
 <body>
   <div class="ad-disclosure">当サイトはアフィリエイト広告を利用しています。</div>
@@ -55,6 +55,19 @@
       <div><b>価格履歴</b><span>毎日の変化を記録</span></div>
       <div><b>広告優先なし</b><span>報酬額で順位を変えない</span></div>
       <div><b>毎日更新</b><span>10:10ごろ価格を確認</span></div>
+    </section>
+
+    <section id="priceDrops" class="section price-drops">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">PRICE DROP</span>
+          <h2>今日の値下がりTOP10</h2>
+          <p class="section-note">過去の記録価格と比べて、現在の送料込み比較価格が下がっている商品を表示します。</p>
+        </div>
+      </div>
+      <div id="priceDropGrid" class="price-drop-grid" aria-live="polite">
+        <p class="price-drop-empty">価格履歴を確認中…</p>
+      </div>
     </section>
 
     <section id="today" class="section">
@@ -124,6 +137,6 @@
     <small>© 2026 今日の売り出し</small>
   </footer>
 
-  <script type="module" src="app.js?v=shipping2"></script>
+  <script type="module" src="app.js?v=pricedrop1"></script>
 </body>
 </html>
