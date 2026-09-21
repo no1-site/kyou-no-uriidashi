@@ -37,7 +37,10 @@ async function setup() {
   await git(repositoryPath, "config", "core.autocrlf", "false");
   await writeFile(join(repositoryPath, ".gitignore"), ".local/\n");
   await writeFile(join(repositoryPath, "products.json"), "[]\n");
-  await git(repositoryPath, "add", ".gitignore", "products.json");
+  await writeFile(join(repositoryPath, "sitemap.xml"), "<old-sitemap/>\n");
+  await mkdir(join(repositoryPath, "products"));
+  await writeFile(join(repositoryPath, "products", "12345678.html"), "stale page\n");
+  await git(repositoryPath, "add", ".gitignore", "products.json", "sitemap.xml", "products/12345678.html");
   await git(repositoryPath, "commit", "-m", "Fixture initial data");
   await git(repositoryPath, "remote", "add", "origin", remote);
   await git(repositoryPath, "push", "-u", "origin", "main");
@@ -52,7 +55,7 @@ function options(config) {
     runStage: async (name, env) => {
       assert.equal(name, "rakuten");
       await writeFile(env.RAKUTEN_OUTPUT_PATH, JSON.stringify([{
-        id: "reference", name: "参考商品", category: "日用品", price: 1000,
+        id: "reference", product_code: "4901111784185", name: "参考商品", category: "日用品", price: 1000,
         comparison_type: "review_only", offers: [], best_url: "https://example.com/item",
         checked_at: new Date().toISOString()
       }]));
@@ -60,7 +63,7 @@ function options(config) {
     }, publish: config.publisher.publish, finish: config.publisher.finish };
 }
 
-test("real Git publication sends only products.json and confirms files/history after push", async () => {
+test("real Git publication atomically sends products, SEO page and sitemap and removes stale pages", async () => {
   const config = await setup();
   const base = await git(config.repositoryPath, "rev-parse", "HEAD");
   await runUpdate(options(config));
@@ -68,7 +71,11 @@ test("real Git publication sends only products.json and confirms files/history a
   assert.notEqual(head, base);
   assert.equal(await git(config.remote, "rev-parse", "main"), head);
   assert.equal(await git(config.repositoryPath, "status", "--porcelain"), "");
-  assert.equal(await git(config.repositoryPath, "diff-tree", "--no-commit-id", "--name-only", "-r", head), "products.json");
+  const changed = (await git(config.repositoryPath, "diff-tree", "--no-commit-id", "--name-only", "-r", head)).split(/\r?\n/).sort();
+  assert.deepEqual(changed, ["products.json", "products/12345678.html", "products/4901111784185.html", "sitemap.xml"].sort());
+  assert.equal(await readFile(join(config.repositoryPath, "products", "4901111784185.html"), "utf8").then(value => value.includes("参考商品")), true);
+  await assert.rejects(access(join(config.repositoryPath, "products", "12345678.html")), { code: "ENOENT" });
+  assert.match(await readFile(join(config.repositoryPath, "sitemap.xml"), "utf8"), /4901111784185/);
   assert.equal(JSON.parse(await readFile(config.historyPath, "utf8")).updated_at, "fixture");
 });
 
