@@ -49,7 +49,7 @@ test("Yahoo API failure on the second product preserves the input file byte-for-
   await assertUnchanged(config);
 });
 
-for (const failure of ["rakuten", "yahoo", "yahoo-429", "yahoo-invalid", "keepa", "keepa-invalid"]) {
+for (const failure of ["rakuten", "yahoo", "yahoo-429", "yahoo-invalid"]) {
   test(`${failure} failure leaves live products and history unchanged and never publishes`, async () => {
     const config = await setup();
     let published = false;
@@ -71,7 +71,7 @@ test("publication failure preserves both live files, and a retry can succeed", a
   } }), /offline publication failure/);
   await assertUnchanged(config);
   await runUpdate({ ...config, runStage, environment: environment(), publish: async () => {} });
-  assert.equal(JSON.parse(await readFile(join(config.repositoryPath, "products.json"), "utf8")).length, 12);
+  assert.equal(JSON.parse(await readFile(join(config.repositoryPath, "products.json"), "utf8")).length, 100);
 });
 
 test("successful full update publishes validated final data before live files/history change", async () => {
@@ -82,16 +82,16 @@ test("successful full update publishes validated final data before live files/hi
     publish: async ({ stagedProducts }) => {
       await assertUnchanged(config);
       const products = JSON.parse(await readFile(stagedProducts, "utf8"));
-      assert.equal(products[0].offer_count, 3);
-      assert.equal(products[0].shipping_offer_count, 3);
-      assert.equal(products[0].collection_summary.shipping_included_compared, 12);
+      assert.equal(products[0].offer_count, 2);
+      assert.equal(products[0].shipping_offer_count, 2);
+      assert.equal(products[0].collection_summary.shipping_included_compared, 100);
       assert.equal(products[0].historical_price, null);
     }
   });
-  assert.deepEqual(stages, ["rakuten", "yahoo", "keepa"]);
-  assert.equal(result.count, 12);
+  assert.deepEqual(stages, ["rakuten", "yahoo"]);
+  assert.equal(result.count, 100);
   const history = JSON.parse(await readFile(config.historyPath, "utf8"));
-  assert.equal(Object.keys(history.products).length, 12);
+  assert.equal(Object.keys(history.products).length, 100);
   // Yahoo 700-yen offers must not contaminate Rakuten's 800-yen history.
   assert.ok(Object.values(history.products).flat().every(entry => entry.price === 800));
 });
@@ -109,10 +109,10 @@ test("publication validation failure retains live data", async () => {
   await assert.rejects(runUpdate({ ...config, environment: environment(),
     runStage: async (name, env) => {
       runStage(name, env);
-      if (name === "keepa") {
-        const products = JSON.parse(await readFile(env.KEEPA_PRODUCTS_PATH, "utf8"));
+      if (name === "yahoo") {
+        const products = JSON.parse(await readFile(env.YAHOO_PRODUCTS_PATH, "utf8"));
         products[0].offers[0].price = 0;
-        await writeFile(env.KEEPA_PRODUCTS_PATH, JSON.stringify(products));
+        await writeFile(env.YAHOO_PRODUCTS_PATH, JSON.stringify(products));
       }
     }, publish: async () => { assert.fail("must not publish invalid data"); }
   }), /invalid_offer/);
