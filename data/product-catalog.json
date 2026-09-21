@@ -880,6 +880,26 @@
       "count": "",
       "category": "ホビー",
       "enabled": true
+    },
+    {
+      "jan": "4580552551701",
+      "name": "ESCALOGUE 失われた記憶と私と巡り廻る夜の歌 ボードゲーム",
+      "brand": "グループSNE",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "ホビー",
+      "enabled": true
+    },
+    {
+      "jan": "4904530408069",
+      "name": "TOSHIBA トルネオミニ サイクロン式掃除機 VC-C7(R)",
+      "brand": "東芝(TOSHIBA)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "家電",
+      "enabled": true
     }
   ]
 }
