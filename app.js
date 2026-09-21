@@ -136,6 +136,58 @@ function renderShopTable(item) {
   </div>`;
 }
 
+function priceDropDeals() {
+  return deals
+    .filter(item => canScore(item) && Number(item.historical_discount_percent) > 0 && validPositiveNumber(item.historical_price))
+    .sort((a, b) =>
+      Number(b.historical_discount_percent || 0) - Number(a.historical_discount_percent || 0) ||
+      Number(a.price || Infinity) - Number(b.price || Infinity)
+    )
+    .slice(0, 10);
+}
+
+function renderPriceDrops() {
+  const target = document.querySelector("#priceDropGrid");
+  if (!target) return;
+  const list = priceDropDeals();
+  if (!list.length) {
+    target.innerHTML = '<p class="price-drop-empty">まだ十分な価格履歴がありません。毎日の更新で比較できる商品が増えていきます。</p>';
+    return;
+  }
+  target.innerHTML = list.map((item, index) => {
+    const imageURL = safeURL(item.image_url);
+    const productURL = safeURL(item.best_url);
+    const previous = validPositiveNumber(item.historical_price);
+    const current = validPositiveNumber(item.price);
+    const discount = Math.max(0, Math.round(Number(item.historical_discount_percent) || 0));
+    const difference = previous && current ? Math.max(0, Math.round(previous - current)) : null;
+    const visual = imageURL
+      ? `<img src="${escapeHTML(imageURL)}" alt="${escapeHTML(item.name)}" loading="lazy" referrerpolicy="no-referrer">`
+      : `<span class="price-drop-emoji">${emoji[item.category] || "🛍️"}</span>`;
+    const link = productURL
+      ? `<a class="price-drop-link shop-link best" href="${escapeHTML(productURL)}" target="_blank"
+          rel="sponsored nofollow noopener noreferrer" data-product-name="${escapeHTML(item.name)}"
+          data-product-category="${escapeHTML(item.category)}">価格を確認</a>`
+      : "";
+    return `
+      <article class="price-drop-card">
+        <div class="price-drop-rank">#${index + 1}</div>
+        <div class="price-drop-visual">${visual}</div>
+        <div class="price-drop-body">
+          <span class="price-drop-category">${escapeHTML(item.category)}</span>
+          <h3>${escapeHTML(item.name)}</h3>
+          <div class="price-drop-percent">-${discount}%</div>
+          <div class="price-drop-prices">
+            <span>現在 ${formatPrice(current)}</span>
+            <span>過去の記録価格 ${formatPrice(previous)}</span>
+          </div>
+          ${difference ? `<p class="price-drop-difference">記録価格より ${formatPrice(difference)} 低い</p>` : ""}
+          ${link}
+        </div>
+      </article>`;
+  }).join("");
+}
+
 function updateSignal() {
   const scoreElement = document.querySelector("#signalScore");
   const labelElement = document.querySelector("#signalLabel");
@@ -229,6 +281,7 @@ async function loadDeals() {
 
     const active = document.querySelector(".filter.active");
     render(active?.dataset.filter || "all");
+    renderPriceDrops();
     updateSignal();
 
     const dates = deals
