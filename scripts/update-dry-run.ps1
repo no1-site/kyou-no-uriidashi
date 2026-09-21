@@ -16,6 +16,9 @@ try {
     $env:RAKUTEN_APPLICATION_ID = [System.Net.NetworkCredential]::new("", $rakuten.ApplicationId).Password
     $env:RAKUTEN_ACCESS_KEY = [System.Net.NetworkCredential]::new("", $rakuten.AccessKey).Password
     $env:YAHOO_CLIENT_ID = [System.Net.NetworkCredential]::new("", $yahoo.ClientId).Password
+    if ($yahoo.PSObject.Properties.Name -contains "AffiliateId" -and $yahoo.AffiliateId) {
+        $env:YAHOO_AFFILIATE_ID = [System.Net.NetworkCredential]::new("", $yahoo.AffiliateId).Password
+    }
     $valueCommercePath = Join-Path $configDirectory "valuecommerce-credentials.xml"
     if (Test-Path $valueCommercePath) {
         $valueCommerce = Import-Clixml -LiteralPath $valueCommercePath
