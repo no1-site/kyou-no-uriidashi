@@ -58,11 +58,11 @@ test("dry-run collects and validates without publication, overrides output paths
   });
   assert.equal(result.ok, true);
   assert.deepEqual(stages, ["rakuten", "yahoo"]);
-  assert.equal(result.productCount, 12);
-  assert.equal(result.comparedCount, 12);
-  assert.equal(result.yahooProducts, 12);
-  assert.equal(result.yahooOffers, 12);
-  assert.deepEqual(result.yahooExcluded, { duplicate_shop: 12, quantity_mismatch: 12, jan_mismatch: 12, condition: 12 });
+  assert.equal(result.productCount, 100);
+  assert.equal(result.comparedCount, 100);
+  assert.equal(result.yahooProducts, 100);
+  assert.equal(result.yahooOffers, 100);
+  assert.deepEqual(result.yahooExcluded, { duplicate_shop: 100, quantity_mismatch: 100, jan_mismatch: 100, condition: 100 });
   assert.equal(result.heldCount, 0);
   assert.ok(result.elapsedSeconds > 0);
   await assertUntouched(config);
@@ -192,7 +192,7 @@ test("Windows launcher decrypts saved credentials, ignores inherited Keepa, and 
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.equal(result.stdout.trim().split(/\r?\n/).length, 7);
-  assert.match(result.stdout, /取得商品数：12件/);
+  assert.match(result.stdout, /取得商品数：100件/);
   assert.doesNotMatch(result.stdout, /dry-fixture|inherited-must-be-cleared/);
   for (const [i, name] of ["rakuten-credentials.xml", "yahoo-credentials.xml", "price-history.json"].entries()) {
     assert.deepEqual(await readFile(join(credentials, name)), snapshots[i]);
