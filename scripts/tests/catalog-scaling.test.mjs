@@ -41,6 +41,12 @@ test("catalog rejects ISBN books and obvious food keyword collisions",()=>{
   assert.throws(()=>validateCatalog({version:1,products:[book]},names));
   const beautyAsFood={jan:"4901696541845",name:"ロゼット 洗顔パスタ 海泥スムース(120g)",brand:"ロゼット",model:"",capacity:"",count:"",category:"食品",enabled:true};
   assert.throws(()=>validateCatalog({version:1,products:[beautyAsFood]},names));
+  const coffeeSpoon={jan:"4901601531404",name:"ベニス インスタントコーヒースプーン FA0280(1コ入)",brand:"ベニス",model:"",capacity:"",count:"",category:"食品",enabled:true};
+  assert.throws(()=>validateCatalog({version:1,products:[coffeeSpoon]},names));
+  const pastaStrainer={jan:"0026102078211",name:"Arc international 18－8木柄新型スパゲティーてぼ",brand:"Arcoroc",model:"RIS1101",capacity:"",count:"",category:"食品",enabled:true};
+  assert.throws(()=>validateCatalog({version:1,products:[pastaStrainer]},names));
+  const vacuumFreeBag={jan:"4901983802758",name:"KP掃除機のいらないふとん圧縮パック Mサイズ(1枚入)",brand:"東和産業",model:"",capacity:"",count:"",category:"家電",enabled:true};
+  assert.throws(()=>validateCatalog({version:1,products:[vacuumFreeBag]},names));
 });
 for(const target of [20,50,100]) test(`tracks ${target} fixed products without discovery and validates publication`, async()=>{
   const result=await collectCatalog({catalog:catalog100(),config,target,compare:async p=>comparison(p),discover:()=>assert.fail('fixed catalog must be preferred')});
