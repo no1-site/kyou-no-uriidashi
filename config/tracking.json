@@ -13,7 +13,7 @@
   "categories": [
     {
       "category": "日用品",
-      "weight": 30,
+      "weight": 35,
       "keywords": [
         "洗濯洗剤",
         "トイレットペーパー",
@@ -23,7 +23,7 @@
     },
     {
       "category": "食品",
-      "weight": 25,
+      "weight": 15,
       "keywords": [
         "インスタントコーヒー",
         "レトルトカレー",
@@ -33,7 +33,7 @@
     },
     {
       "category": "美容",
-      "weight": 15,
+      "weight": 20,
       "keywords": [
         "美容液",
         "化粧水",
