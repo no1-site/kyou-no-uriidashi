@@ -1,6 +1,6 @@
 import { normalizeText } from "./rakuten-comparison.mjs";
 
-export const selectionVersion = "main-products-v3";
+export const selectionVersion = "main-products-v4";
 
 // Discovery guards keep unrelated products from consuming fixed-category slots.
 // Refill detergent, pet food and other consumables remain eligible.
@@ -21,6 +21,7 @@ export function selectionExclusion(name, category, jan = "") {
     // spaghetti strainers. Keep the food category to edible/drinkable goods.
     const utensils = /(?:コーヒー|珈琲).*(?:スプーン|ドリッパー|フィルタ[ー]?|ミル|サーバー)|(?:スパゲティ|パスタ).*(?:揚|てぼ|トング|フォーク|サーバー|ストレーナ|ざる|ザル)/;
     if (utensils.test(title)) return "food_utensil";
+    if (/残り汁|凝固剤|固めてポン|固める/.test(title)) return "not_food";
   }
   if (category === "家電") {
     const parts = /交換用|交換部品|補修|修理用|パーツ|部品|リチウムイオン電池|充電池|バッテリー|acアダプタ|電源アダプタ|充電器|充電台|フィルタ[ー]?|紙パック(?!式)|ダストバッグ|集じん袋|ノズル|ホース|ブラシ|ヘッド|アタッチメント|スタンド|収納ケース|収納袋/;
