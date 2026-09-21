@@ -13,16 +13,20 @@ function safePrice(value) {
   return Number.isSafeInteger(price) ? price : null;
 }
 
-export function evaluateValueCommerceOffer(item, expectedJan, product = {}, allowedEcCodes = []) {
+export function evaluateValueCommerceOffer(item, expectedJan, product = {}, allowedEcCodes = [], allowedMerchants = []) {
   if (!item || typeof item !== "object") return { reason: "invalid_item" };
   const jan = validJAN(expectedJan);
   if (!jan || !janCodes(item.janCode).includes(jan)) return { reason: "jan_mismatch" };
 
   const ecCode = String(item.ecCode || "").trim();
-  const allowed = new Set((Array.isArray(allowedEcCodes) ? allowedEcCodes : [])
+  const merchantName = String(item.merchantName || item.subStoreName || "").trim();
+  const allowedCodes = new Set((Array.isArray(allowedEcCodes) ? allowedEcCodes : [])
     .map(code => String(code).trim()).filter(Boolean));
-  if (!/^[A-Za-z0-9]+$/.test(ecCode) || (allowed.size && !allowed.has(ecCode))) {
-    return { reason: "merchant_not_allowed" };
+  const allowedNames = new Set((Array.isArray(allowedMerchants) ? allowedMerchants : [])
+    .map(name => String(name).trim()).filter(Boolean));
+  if (!/^[A-Za-z0-9]+$/.test(ecCode)) return { reason: "merchant_not_allowed" };
+  if (allowedCodes.size || allowedNames.size) {
+    if (!allowedCodes.has(ecCode) && !allowedNames.has(merchantName)) return { reason: "merchant_not_allowed" };
   }
 
   const productCategory = String(item.product_category || item.productCategory || "").trim();
@@ -41,9 +45,9 @@ export function evaluateValueCommerceOffer(item, expectedJan, product = {}, allo
 
   const price = safePrice(item.sale_price || item.salePrice) || safePrice(item.price);
   const url = httpsURL(item.link);
-  const merchantName = String(item.subStoreName || item.merchantName || "").trim();
+  const shopName = String(item.subStoreName || item.merchantName || "").trim();
   if (!price) return { reason: "missing_price" };
-  if (!url || !merchantName) return { reason: "missing_shop_or_link" };
+  if (!url || !shopName) return { reason: "missing_shop_or_link" };
 
   const postageText = String(item.postage || "").trim();
   const postage = postageText === "なし" ? "included" : postageText === "あり" ? "extra" : "unknown";
@@ -51,7 +55,7 @@ export function evaluateValueCommerceOffer(item, expectedJan, product = {}, allo
 
   return { offer: {
     shop_code: `valuecommerce:${ecCode}`,
-    shop_name: merchantName,
+    shop_name: shopName,
     item_code: `valuecommerce:${ecCode}:${String(item.productCode || item.modelCode || jan)}`,
     item_name: String(item.title || ""),
     price,
@@ -70,7 +74,7 @@ export function evaluateValueCommerceOffer(item, expectedJan, product = {}, allo
   } };
 }
 
-export function mergeValueCommerceOffers(product, items, allowedEcCodes = []) {
+export function mergeValueCommerceOffers(product, items, allowedEcCodes = [], allowedMerchants = []) {
   const expectedJan = validJAN(product?.product_code);
   const rejected = {};
   if (!expectedJan || !Array.isArray(product?.offers)) return { product, added: 0, rejected };
@@ -83,7 +87,7 @@ export function mergeValueCommerceOffers(product, items, allowedEcCodes = []) {
 
   let added = 0;
   for (const item of Array.isArray(items) ? items : []) {
-    const { offer, reason } = evaluateValueCommerceOffer(item, expectedJan, product, allowedEcCodes);
+    const { offer, reason } = evaluateValueCommerceOffer(item, expectedJan, product, allowedEcCodes, allowedMerchants);
     if (!offer) {
       rejected[reason] = (rejected[reason] || 0) + 1;
       continue;
