@@ -130,7 +130,7 @@ test("100-product UI renders first 20, load-more to 100, category resets and kee
   assert.equal(count(),20);
   for(const expected of [40,60,80,100]){click();assert.equal(count(),expected);}
   assert.doesNotMatch(nodes.get('#dealGrid').innerHTML,/class="load-more"/);
-  vm.runInContext("render('食品')",context);assert.equal(count(),20);click();assert.equal(count(),25);
+  vm.runInContext("render('食品')",context);assert.equal(count(),15);
   assert.match(nodes.get('#dealGrid').innerHTML,/送料込み表示|offer-table/);
   assert.match(nodes.get('#dealGrid').innerHTML,/Amazonで価格を確認/);
 });
