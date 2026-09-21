@@ -36,6 +36,12 @@ test("catalog rejects same JAN within and across categories, prices and malforme
   for(const category of names.slice(0,2)) assert.throws(()=>validateCatalog({version:1,products:[entry(1),entry(1,category)]},names));
   for(const change of [{jan:'123'},{price:100},{clientId:'never-allowed'},{enabled:'yes'}]) assert.throws(()=>validateCatalog({version:1,products:[{...entry(1),...change}]},names));
 });
+test("catalog rejects ISBN books and obvious food keyword collisions",()=>{
+  const book={jan:"9784010942000",name:"IELTSブリティッシュ・カウンシル公認 本番形式問題3回分",brand:"旺文社",model:"",capacity:"",count:"",category:"日用品",enabled:true};
+  assert.throws(()=>validateCatalog({version:1,products:[book]},names));
+  const beautyAsFood={jan:"4901696541845",name:"ロゼット 洗顔パスタ 海泥スムース(120g)",brand:"ロゼット",model:"",capacity:"",count:"",category:"食品",enabled:true};
+  assert.throws(()=>validateCatalog({version:1,products:[beautyAsFood]},names));
+});
 for(const target of [20,50,100]) test(`tracks ${target} fixed products without discovery and validates publication`, async()=>{
   const result=await collectCatalog({catalog:catalog100(),config,target,compare:async p=>comparison(p),discover:()=>assert.fail('fixed catalog must be preferred')});
   assert.equal(result.products.length,target);
