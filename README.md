@@ -84,6 +84,7 @@ Node.js 20以降で `node --test scripts/tests/*.test.mjs` を実行します。
 
 - [楽天市場商品検索API](https://webservice.rakuten.co.jp/documentation/ichiba-item-search)
 - [商品価格ナビ製品検索API](https://webservice.rakuten.co.jp/documentation/ichiba-product-search)
+- [Yahoo!ショッピング アフィリエイトプログラム](https://developer.yahoo.co.jp/webapi/shopping/affiliate.html)
 
 
 ## Yahoo!ショッピング連携
@@ -96,7 +97,7 @@ Yahoo!の数量・中古・セット・選択式・関連部品・複数JANの�
 
 Yahoo!ショッピング商品検索v3はアプリケーションIDごとに1分30リクエストの制限があるため、応答後に最低2200ms空けて直列送信します。`YAHOO_REQUEST_INTERVAL_MS` は2200未満・非整数・非有限値を拒否します（未指定は2200）。Yahoo連携が未設定でも楽天のみの更新は継続します。
 
-Yahoo!ショッピングのアフィリエイトIDは現時点では未設定で、まず価格比較を優先します。
+Yahoo!ショッピングのアフィリエイトは、ValueCommerceのYahoo!ショッピング用リファラルURL（またはURLエンコード済みの `affiliate_id`）を `scripts/setup-yahoo-affiliate.ps1` で保存すると有効になります。値はWindowsユーザーに紐づく暗号化ファイルへ保存し、GitHubには保存しません。設定後は商品検索APIへ `affiliate_type=vc` と `affiliate_id` を付け、APIが返す商品URLをアフィリエイトリンクとして利用します。未設定時は従来どおり通常の商品URLで価格比較します。
 
 
 ## Keepa / Amazon.co.jp連携
