@@ -9,6 +9,7 @@ $configDirectory = Join-Path $env:LOCALAPPDATA "KyouNoUriidashi"
 $configPath = Join-Path $configDirectory "rakuten-credentials.xml"
 $yahooConfigPath = Join-Path $configDirectory "yahoo-credentials.xml"
 $keepaConfigPath = Join-Path $configDirectory "keepa-credentials.xml"
+$valueCommerceConfigPath = Join-Path $configDirectory "valuecommerce-credentials.xml"
 $logPath = Join-Path $configDirectory "update.log"
 
 New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
@@ -60,6 +61,12 @@ try {
         $env:KEEPA_API_KEY = Reveal-SecureValue $keepaSettings.ApiKey
     }
 
+    if (Test-Path $valueCommerceConfigPath) {
+        $valueCommerceSettings = Import-Clixml -Path $valueCommerceConfigPath
+        $env:VALUECOMMERCE_TOKEN = Reveal-SecureValue $valueCommerceSettings.Token
+        $env:VALUECOMMERCE_ALLOWED_EC_CODES = [string]$valueCommerceSettings.AllowedEcCodes
+    }
+
     Write-UpdateLog "Starting update."
 
     $currentBranch = & $gitExecutable -C $repositoryPath branch --show-current
@@ -102,6 +109,8 @@ finally {
     Remove-Item Env:YAHOO_AFFILIATE_ID -ErrorAction SilentlyContinue
     Remove-Item Env:KEEPA_API_KEY -ErrorAction SilentlyContinue
     Remove-Item Env:AMAZON_ASSOCIATE_TAG -ErrorAction SilentlyContinue
+    Remove-Item Env:VALUECOMMERCE_TOKEN -ErrorAction SilentlyContinue
+    Remove-Item Env:VALUECOMMERCE_ALLOWED_EC_CODES -ErrorAction SilentlyContinue
 
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName
