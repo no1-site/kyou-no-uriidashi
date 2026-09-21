@@ -47,6 +47,8 @@ test("catalog rejects ISBN books and obvious food keyword collisions",()=>{
   assert.throws(()=>validateCatalog({version:1,products:[pastaStrainer]},names));
   const vacuumFreeBag={jan:"4901983802758",name:"KP掃除機のいらないふとん圧縮パック Mサイズ(1枚入)",brand:"東和産業",model:"",capacity:"",count:"",category:"家電",enabled:true};
   assert.throws(()=>validateCatalog({version:1,products:[vacuumFreeBag]},names));
+  const soupSolidifier={jan:"4971902927060",name:"残った麺スープ 固めてポン カップ麺の残り汁の凝固剤(11g*12包入)",brand:"紀陽除虫菊",model:"",capacity:"",count:"",category:"食品",enabled:true};
+  assert.throws(()=>validateCatalog({version:1,products:[soupSolidifier]},names));
 });
 for(const target of [20,50,100]) test(`tracks ${target} fixed products without discovery and validates publication`, async()=>{
   const result=await collectCatalog({catalog:catalog100(),config,target,compare:async p=>comparison(p),discover:()=>assert.fail('fixed catalog must be preferred')});
