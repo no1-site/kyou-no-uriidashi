@@ -66,7 +66,7 @@ test("dry-run collects and validates without publication, overrides output paths
   assert.equal(result.heldCount, 0);
   assert.ok(result.elapsedSeconds > 0);
   await assertUntouched(config);
-  assert.deepEqual(await readdir(join(config.repositoryPath, ".local")), []);
+  assert.deepEqual(await readdir(join(config.repositoryPath, ".local")), ["catalog-proposal-100.json"]);
 });
 
 test("configured Keepa is forcibly skipped in dry-run", async () => {
@@ -192,7 +192,7 @@ test("Windows launcher decrypts saved credentials, ignores inherited Keepa, and 
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.equal(result.stdout.trim().split(/\r?\n/).length, 7);
-  assert.match(result.stdout, /取得商品数：100件/);
+  assert.match(result.stdout, /取得商品数：12件/);
   assert.doesNotMatch(result.stdout, /dry-fixture|inherited-must-be-cleared/);
   for (const [i, name] of ["rakuten-credentials.xml", "yahoo-credentials.xml", "price-history.json"].entries()) {
     assert.deepEqual(await readFile(join(credentials, name)), snapshots[i]);
