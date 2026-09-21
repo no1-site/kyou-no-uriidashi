@@ -113,7 +113,7 @@ async function discover(search, diagnostics) {
       const rows = await request("product", { keyword, hits: 30, sort: "standard" });
       diagnostics.catalog_rows += rows.length;
       // Catalog is used for identity only; prices come from individual listings.
-      lists.push(rows.filter(row => eligibleSelection(row.productName, search.category, diagnostics))
+      lists.push(rows.filter(row => eligibleSelection(row.productName, search.category, diagnostics, row.productCode))
         .map(row => productIdentity(row, search.category)).filter(Boolean));
     } catch (error) { recordError(error); }
   }
@@ -129,8 +129,8 @@ async function discover(search, diagnostics) {
   return [...unique.values()];
 }
 
-function eligibleSelection(name, category, diagnostics) {
-  const reason = selectionExclusion(name, category);
+function eligibleSelection(name, category, diagnostics, jan = "") {
+  const reason = selectionExclusion(name, category, jan);
   if (!reason) return true;
   diagnostics.selection_excluded[reason] = (diagnostics.selection_excluded[reason] || 0) + 1;
   return false;

@@ -38,7 +38,7 @@ export function validateCatalog(catalog, categories) {
     if (!p || Object.keys(p).some(k => !fields.includes(k)) || (!validJAN(p.jan) || validJAN(p.jan) !== p.jan) || seen.has(p.jan) ||
         !categories.includes(p.category) || typeof p.enabled !== "boolean" ||
         ["jan", "name", "brand", "model", "capacity", "count"].some(k => typeof p[k] !== "string") ||
-        !catalogIdentity(p) || selectionExclusion(p.name, p.category)) throw new Error("Invalid or duplicate catalog entry.");
+        !catalogIdentity(p) || selectionExclusion(p.name, p.category, p.jan)) throw new Error("Invalid or duplicate catalog entry.");
     seen.add(p.jan);
   }
   return catalog;
@@ -60,7 +60,7 @@ export function mergeConfirmedCatalog(catalog, products, categories) {
   for (const p of products) {
     if (known.has(p.product_code) || !validJAN(p.product_code) || p.validation_version !== validationVersion ||
         p.comparison_type !== "rakuten_shops" || p.comparison_hold_reason || !categories.includes(p.category) ||
-        !p.offers?.length || p.offers.some(o => o.matched_jan !== p.product_code) || selectionExclusion(p.name, p.category)) continue;
+        !p.offers?.length || p.offers.some(o => o.matched_jan !== p.product_code) || selectionExclusion(p.name, p.category, p.product_code)) continue;
     const entry = catalogEntry(p);
     if (!catalogIdentity(entry)) continue;
     entries.push(entry);
