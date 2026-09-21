@@ -38,7 +38,7 @@ if ($decoded -notmatch "(^|[?&])sid=[^&]+" -or $decoded -notmatch "(^|[?&])pid=[
 if ($decoded -notmatch "([?&])vc_url=") {
     $decoded += "&vc_url="
 }
-$affiliateId = [System.Uri]::EscapeDataString($decoded)
+$affiliateId = $decoded
 
 $settings = Import-Clixml -LiteralPath $configPath
 if (-not $settings.ClientId) {
