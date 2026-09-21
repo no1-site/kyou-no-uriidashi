@@ -48,3 +48,5 @@ ECコードはカンマ区切りで明示し、許可リスト外の広告主は
   https://pub-docs.valuecommerce.ne.jp/docs/as-63-item-api/
 - ValueCommerce MyLinkBox
   https://www.valuecommerce.ne.jp/stepup/guide/tool/mylinkbox/
+
+実装は認証未設定時に完全スキップされるため、既存の楽天・Yahoo本番更新を維持する。
