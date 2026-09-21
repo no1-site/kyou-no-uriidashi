@@ -640,6 +640,246 @@
       "count": "",
       "category": "ホビー",
       "enabled": true
+    },
+    {
+      "jan": "4974972287119",
+      "name": "ちふれ 保湿化粧水 とてもしっとりタイプ(180ml)",
+      "brand": "ちふれ",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "美容",
+      "enabled": true
+    },
+    {
+      "jan": "4987176295804",
+      "name": "ボールド 柔軟剤入り 洗濯洗剤 液体 爽やかおひさまとフレッシュサボン 詰め替え(690g)",
+      "brand": "ボールド 液体",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4538878011010",
+      "name": "エコベール ゼロ食器用洗剤(5000ml)",
+      "brand": "エコベール",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4573346505073",
+      "name": "西フランク王国の建築家 日本語版 ボードゲーム",
+      "brand": "ケンビル",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "ホビー",
+      "enabled": true
+    },
+    {
+      "jan": "4582469506799",
+      "name": "ランドリン WASH 洗濯洗剤 濃縮液体 クラシックフローラル 詰め替え(360g)",
+      "brand": "ランドリン",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4901301422118",
+      "name": "キュキュット 食器用洗剤 クリア泡スプレー 微香性 つめかえ用 超特大サイズ(1120ml)",
+      "brand": "キュキュット",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4977292492942",
+      "name": "SK11 乾湿両用掃除機 ステンレスタンク 静音 SVC-200PQS(1台)",
+      "brand": "SK11",
+      "model": "SVC-200PQS",
+      "capacity": "",
+      "count": "",
+      "category": "家電",
+      "enabled": true
+    },
+    {
+      "jan": "4905397035658",
+      "name": "スリーライン メラミン ティッシュボックス S HW304MI・HW304FI",
+      "brand": "スリーライン",
+      "model": "VTI2001",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4903301282914",
+      "name": "トップ クリアリキッド抗菌 洗濯洗剤 本体(900g)",
+      "brand": "トップ",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4987176118257",
+      "name": "ジョイ W除菌 食器用洗剤 緑茶 本体(170ml)",
+      "brand": "ジョイ(Joy)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4902875190809",
+      "name": "緑の魔女 キッチンプレミアム 食器用洗剤 つめかえ用(480ml)",
+      "brand": "緑の魔女",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4987176295712",
+      "name": "ボールド 柔軟剤入り 洗濯洗剤 液体 爽やかおひさまとフレッシュサボン 詰め替え(960g)",
+      "brand": "ボールド 液体",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4901301421159",
+      "name": "キュキュット 食器用洗剤 クリア泡スプレー レモンライムの香り つめかえ用 特大(690ml)",
+      "brand": "キュキュット",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4987176336323",
+      "name": "ボールド 洗濯洗剤 ジェルボール 4in1 ホワイトティー 詰め替え テラジャンボ(86個入)",
+      "brand": "ボールド ジェルボール",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "日用品",
+      "enabled": true
+    },
+    {
+      "jan": "4901111784185",
+      "name": "AGF ブレンディ インスタントコーヒー 袋 詰め替え(200g)",
+      "brand": "ブレンディ(Blendy)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4901111776807",
+      "name": "AGF ちょっと贅沢な珈琲店 インスタントコーヒー スペシャルブレンド 瓶(80g)",
+      "brand": "味の素AGF",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4940927700187",
+      "name": "インスタントコーヒー フリーズドライコーヒー 200g",
+      "brand": "ワンステップ",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4902110326741",
+      "name": "マ・マー 早ゆで4分スパゲティ 1.8mm 結束タイプ(500g)",
+      "brand": "マ・マー",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4901372407731",
+      "name": "インスタントコーヒー グランドテイスト マイルドダーク 袋(80g)",
+      "brand": "キーコーヒー(KEY COFFEE)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4901111642164",
+      "name": "AGF ブレンディ インスタントコーヒー まろやかな香りブレンド 袋 詰め替え(200g)",
+      "brand": "ブレンディ(Blendy)",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4902831123254",
+      "name": "日東紅茶 ディ＆ディ ティーバッグ(50袋入)",
+      "brand": "日東紅茶",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "食品",
+      "enabled": true
+    },
+    {
+      "jan": "4974305232205",
+      "name": "ZOJIRUSHI 圧力IH炊飯ジャー 炎舞炊き NX-AB18-BZ",
+      "brand": "象印マホービン",
+      "model": "NX-AB18-BZ",
+      "capacity": "",
+      "count": "",
+      "category": "家電",
+      "enabled": true
+    },
+    {
+      "jan": "0078206020016",
+      "name": "ウノ カード ゲーム ソフト パック",
+      "brand": "",
+      "model": "",
+      "capacity": "",
+      "count": "",
+      "category": "ホビー",
+      "enabled": true
+    },
+    {
+      "jan": "4580474578121",
+      "name": "ハイキャパ工具ポーチ プラモ向上委員会",
+      "brand": "プラモ向上委員会",
+      "model": "PMKJ041",
+      "capacity": "",
+      "count": "",
+      "category": "ホビー",
+      "enabled": true
     }
   ]
 }
