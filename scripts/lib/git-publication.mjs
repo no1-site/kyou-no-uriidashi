@@ -25,12 +25,30 @@ export function createGitPublisher({ gitPath, repositoryPath, branch = "main", e
   }
   return {
     preflight,
-    async publish({ stagedProducts, staging }) {
+    async publish({ stagedProducts, staging, stagedSiteAssets = [] }) {
       const base = await preflight();
       const indexEnvironment = { GIT_INDEX_FILE: join(staging, "publication.index") };
       await git(["read-tree", base], indexEnvironment);
       const blob = await git(["hash-object", "-w", "--", stagedProducts]);
       await git(["update-index", "--add", "--cacheinfo", `100644,${blob},products.json`], indexEnvironment);
+
+      const desiredProductPages = new Set(
+        stagedSiteAssets.map(asset => asset.path).filter(path => /^products\/\d{8,13}\.html$/.test(path))
+      );
+      const existingProductPages = (await git(["ls-tree", "-r", "--name-only", base, "--", "products"]))
+        .split(/\r?\n/).filter(path => /^products\/\d{8,13}\.html$/.test(path));
+      for (const path of existingProductPages) {
+        if (!desiredProductPages.has(path)) {
+          await git(["update-index", "--force-remove", "--", path], indexEnvironment);
+        }
+      }
+      for (const asset of stagedSiteAssets) {
+        if (!/^(?:sitemap\.xml|products\/\d{8,13}\.html)$/.test(asset.path)) {
+          throw new Error("Git publication failed: invalid-site-asset");
+        }
+        const assetBlob = await git(["hash-object", "-w", "--", asset.stagedPath]);
+        await git(["update-index", "--add", "--cacheinfo", `100644,${assetBlob},${asset.path}`], indexEnvironment);
+      }
       const tree = await git(["write-tree"], indexEnvironment);
       const commit = await git(["-c", "user.name=no1-site", "-c", "user.email=no1-site@users.noreply.github.com",
         "commit-tree", tree, "-p", base, "-m", `Update market products ${new Date().toISOString()}`]);
@@ -57,7 +75,7 @@ export function createGitPublisher({ gitPath, repositoryPath, branch = "main", e
       if (!receipt) throw new Error("Missing publication receipt.");
       const { base, commit, blob, branch: publishedBranch } = receipt;
       await git(["update-ref", `refs/heads/${publishedBranch}`, commit, base]);
-      await git(["update-index", "--add", "--cacheinfo", `100644,${blob},products.json`]);
+      await git(["read-tree", commit]);
     }
   };
 }
