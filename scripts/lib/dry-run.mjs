@@ -74,7 +74,7 @@ export async function runDryRun({ repositoryPath, historyPath, environment = pro
     const historyBytes = await optionalRead(historyPath);
     const previous = previousBytes ? JSON.parse(previousBytes.toString("utf8")) : [];
     const { products, productBytes, historyBytes: collectedHistory } = await collectStagedProducts({ staging, historyPath, previous,
-      environment: { ...environment, KEEPA_API_KEY: "", RAKUTEN_AFFILIATE_ID: "", YAHOO_AFFILIATE_ID: "", AMAZON_ASSOCIATE_TAG: "" }, runStage });
+      environment: { ...environment, KEEPA_API_KEY: "", RAKUTEN_AFFILIATE_ID: "", AMAZON_ASSOCIATE_TAG: "" }, runStage });
     if (!sameBytes(previousBytes, await optionalRead(productsPath)) || !sameBytes(historyBytes, await optionalRead(historyPath))) {
       throw Object.assign(new Error("Live input changed."), { dryRunCode: "changed" });
     }
