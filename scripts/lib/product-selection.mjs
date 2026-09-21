@@ -2,9 +2,9 @@ import { normalizeText } from "./rakuten-comparison.mjs";
 
 export const selectionVersion = "main-products-v2";
 
-// These rules apply to our appliance and hobby discovery categories only.
+// Discovery guards keep unrelated products from consuming fixed-category slots.
 // Refill detergent, pet food and other consumables remain eligible.
-// Inspect the product title, never shop boilerplate or a search hit alone.
+// Inspect product identity/title fields, never shop boilerplate or a search hit alone.
 export function selectionExclusion(name, category, jan = "") {
   const title = normalizeText(name);
   if (!title) return "missing_name";
