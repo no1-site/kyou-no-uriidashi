@@ -43,7 +43,7 @@ export function createGitPublisher({ gitPath, repositoryPath, branch = "main", e
         }
       }
       for (const asset of stagedSiteAssets) {
-        if (!/^(?:sitemap\.xml|products\/\d{8,13}\.html)$/.test(asset.path)) {
+        if (!/^(?:sitemap\.xml|robots\.txt|products\/\d{8,13}\.html|categories\/(?:kaden|hobby|beauty|food|pet|daily)\.html)$/.test(asset.path)) {
           throw new Error("Git publication failed: invalid-site-asset");
         }
         const assetBlob = await git(["hash-object", "-w", "--", asset.stagedPath]);
