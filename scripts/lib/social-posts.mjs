@@ -43,6 +43,21 @@ function comparableOfferCount(product) {
   return shops.size;
 }
 
+export function currentComparisonCandidates(products) {
+  return (Array.isArray(products) ? products : [])
+    .filter(product => Boolean(
+      productPath(product) &&
+      cleanText(product?.name) &&
+      positiveNumber(product?.price) &&
+      comparableOfferCount(product) >= 2
+    ))
+    .sort((a, b) =>
+      Number(b?.score || 0) - Number(a?.score || 0) ||
+      Number(b?.review_count || 0) - Number(a?.review_count || 0) ||
+      Number(a?.price || Infinity) - Number(b?.price || Infinity)
+    );
+}
+
 export function priceDropCandidates(products) {
   return (Array.isArray(products) ? products : [])
     .filter(product => {
@@ -115,22 +130,90 @@ function roundupPost(list, baseURL) {
   ].join("\n");
 }
 
+function currentProductPost(product, baseURL) {
+  const category = cleanText(product.category) || "商品";
+  const count = comparableOfferCount(product);
+  return [
+    `【PR】🔎 今日の${category}価格チェック`,
+    shorten(product.name, 62),
+    `掲載価格 ${formatPrice(product.price)}〜 / ${count}ショップを比較`,
+    "",
+    "送料・在庫など最新条件はこちら👇",
+    productURL(product, baseURL),
+    "#価格比較 #節約 #今日の売り出し"
+  ].join("\n");
+}
+
+function currentRoundupPost(list, baseURL) {
+  const top = list.slice(0, 3);
+  const lines = top.map((product, index) =>
+    `${index + 1}. ${shorten(product.name, 28)}（${formatPrice(product.price)}〜）`
+  );
+  return [
+    "【PR】🛒 今日の価格比較3選",
+    ...lines,
+    "",
+    "同一商品として確認できたショップを比較しています👇",
+    new URL("#today", baseURL).href,
+    "#価格比較 #節約 #今日の売り出し"
+  ].join("\n");
+}
+
 function codePointLength(value) {
   return [...String(value)].length;
 }
 
 export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt = new Date().toISOString() } = {}) {
   const candidates = priceDropCandidates(products);
+  const posts = [];
+
   if (!candidates.length) {
+    const current = currentComparisonCandidates(products);
+    if (!current.length) {
+      return {
+        generated_at: generatedAt,
+        source: "products.json",
+        posts: [],
+        reason: "SNS投稿に使える比較商品がありません。"
+      };
+    }
+
+    if (current.length >= 2) {
+      posts.push({
+        type: "current_roundup",
+        text: currentRoundupPost(current, baseURL),
+        products: current.slice(0, 3).map(product => validJAN(product.product_code))
+      });
+    }
+
+    posts.push({
+      type: "current_product",
+      text: currentProductPost(current[0], baseURL),
+      products: [validJAN(current[0].product_code)]
+    });
+
+    const alternateCurrent = current.find(product => product.category !== current[0].category) || current[1];
+    if (alternateCurrent) {
+      posts.push({
+        type: "current_category",
+        text: currentProductPost(alternateCurrent, baseURL),
+        products: [validJAN(alternateCurrent.product_code)]
+      });
+    }
+
+    for (const post of posts) {
+      post.length = codePointLength(post.text);
+      post.ready = post.length <= 260;
+    }
+
     return {
       generated_at: generatedAt,
       source: "products.json",
-      posts: [],
-      reason: "価格履歴が十分な値下がり商品がありません。"
+      candidate_count: current.length,
+      history_ready: false,
+      posts
     };
   }
-
-  const posts = [];
   if (candidates.length >= 2) {
     posts.push({
       type: "roundup",
@@ -162,6 +245,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     generated_at: generatedAt,
     source: "products.json",
     candidate_count: candidates.length,
+    history_ready: true,
     posts
   };
 }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSocialPosts, priceDropCandidates } from "../lib/social-posts.mjs";
+import { buildSocialPosts, currentComparisonCandidates, priceDropCandidates } from "../lib/social-posts.mjs";
 
 const products = [
   {
@@ -53,8 +53,26 @@ test("social generator creates safe site-link posts without claiming yesterday p
   assert.match(result.posts[1].text, /【PR】/);
 });
 
-test("social generator returns no posts when history is not ready", () => {
-  const result = buildSocialPosts([{ ...products[0], historical_price: null }]);
-  assert.deepEqual(result.posts, []);
-  assert.match(result.reason, /価格履歴/);
+test("current comparison candidates do not require price history", () => {
+  const list = currentComparisonCandidates(products.map(product => ({
+    ...product,
+    historical_price: null,
+    historical_discount_percent: null
+  })));
+  assert.equal(list.length, 2);
+});
+
+test("social generator falls back to current-price posts when history is not ready", () => {
+  const input = products.map(product => ({
+    ...product,
+    historical_price: null,
+    historical_discount_percent: null
+  }));
+  const result = buildSocialPosts(input);
+  assert.equal(result.history_ready, false);
+  assert.equal(result.posts.length, 3);
+  assert.equal(result.posts[0].type, "current_roundup");
+  assert.ok(result.posts.every(post => !post.text.includes("値下がり")));
+  assert.ok(result.posts.every(post => post.text.includes("no1-site.github.io/kyou-no-uriidashi")));
+  assert.match(result.posts[1].text, /掲載価格/);
 });

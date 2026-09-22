@@ -20,7 +20,7 @@ try {
   await writeFile(textPath, text, "utf8");
 
   console.log(`SNS投稿候補生成：${result.posts.length}件`);
-  console.log(`値下がり候補商品：${result.candidate_count || 0}件`);
+  console.log(`${result.history_ready === false ? "価格比較候補商品" : "値下がり候補商品"}：${result.candidate_count || 0}件`);
   console.log("保存先：.local\\social-posts.txt");
   if (!result.posts.length) console.log(result.reason);
 } catch {
