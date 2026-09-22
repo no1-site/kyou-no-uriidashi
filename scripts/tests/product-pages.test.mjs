@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildProductSiteAssets, productPagePath, renderProductPage, renderSitemap } from "../lib/product-pages.mjs";
+import { buildProductSiteAssets, categoryPagePath, productPagePath, renderCategoryPage, renderProductPage, renderRobots, renderSitemap } from "../lib/product-pages.mjs";
 
 const product = {
   id: "rakuten_shops:jan:4901111784185",
@@ -30,6 +30,9 @@ test("product page renders static SEO metadata, shop links and safe markup", () 
   assert.match(html, /Yahoo!ショッピング｜B店/);
   assert.match(html, /掲載ショップ内の現在価格/);
   assert.match(html, /application\/ld\+json/);
+  assert.match(html, /AggregateOffer/);
+  assert.match(html, /BreadcrumbList/);
+  assert.match(html, /掲載ショップ/);
   assert.doesNotMatch(html, /価格.com/);
 
   const malicious = renderProductPage({ ...product, name: '<script>alert("x")</script>' });
@@ -38,16 +41,39 @@ test("product page renders static SEO metadata, shop links and safe markup", () 
   assert.match(malicious, /\\u003cscript/);
 });
 
-test("sitemap contains static pages and every valid product page with lastmod", () => {
+test("category pages use stable slugs and contain crawlable product links", () => {
+  assert.equal(categoryPagePath("食品"), "categories/food.html");
+  const html = renderCategoryPage("食品", [product]);
+  assert.match(html, /食品の価格比較/);
+  assert.match(html, /\.\.\/products\/4901111784185\.html/);
+  assert.match(html, /rel="canonical"/);
+});
+
+test("robots advertises the absolute sitemap URL", () => {
+  const text = renderRobots();
+  assert.match(text, /User-agent: \*/);
+  assert.match(text, /Allow: \//);
+  assert.match(text, /Sitemap: https:\/\/no1-site\.github\.io\/kyou-no-uriidashi\/sitemap\.xml/);
+});
+
+test("sitemap contains category pages and every valid product page with lastmod", () => {
   const xml = renderSitemap([product, { ...product, product_code: "bad" }]);
   assert.match(xml, /https:\/\/no1-site\.github\.io\/kyou-no-uriidashi\//);
+  assert.match(xml, /categories\/food\.html/);
+  assert.match(xml, /categories\/kaden\.html/);
   assert.match(xml, /products\/4901111784185\.html/);
   assert.match(xml, /<lastmod>2026-09-21<\/lastmod>/);
   assert.equal((xml.match(/products\//g) || []).length, 1);
 });
 
-test("site asset builder emits one page per JAN plus sitemap", () => {
+test("site asset builder emits product, six categories, sitemap and robots", () => {
   const assets = buildProductSiteAssets([product]);
-  assert.deepEqual(assets.map(asset => asset.path), ["products/4901111784185.html", "sitemap.xml"]);
-  assert.ok(assets.every(asset => typeof asset.content === "string" && asset.content.length > 100));
+  const paths = assets.map(asset => asset.path);
+  assert.equal(paths.length, 9);
+  assert.ok(paths.includes("products/4901111784185.html"));
+  assert.ok(paths.includes("categories/food.html"));
+  assert.ok(paths.includes("categories/kaden.html"));
+  assert.ok(paths.includes("sitemap.xml"));
+  assert.ok(paths.includes("robots.txt"));
+  assert.ok(assets.every(asset => typeof asset.content === "string" && asset.content.length > 20));
 });
