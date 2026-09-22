@@ -1,9 +1,10 @@
 import { remainingStageMilliseconds } from "./api-budget.mjs";
-import { mkdir, mkdtemp, open, readFile, rename, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, open, readFile, readdir, rename, rm } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { collectStagedProducts } from "./staged-collection.mjs";
+import { writeProductSiteAssets } from "./product-pages.mjs";
 
 const scriptDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -55,6 +56,7 @@ export async function runUpdate({ repositoryPath, historyPath, environment = pro
     const { products, productBytes, historyBytes, stagedProducts } = await collectStagedProducts({
       staging, historyPath, previous, environment: { ...environment, TARGET_PRODUCT_COUNT: "" }, runStage
     });
+    const stagedSiteAssets = await writeProductSiteAssets(products, staging);
     // Detect another writer before publication; never overwrite their changes.
     const currentBytes = await readFile(productsPath).catch(error => {
       if (error.code === "ENOENT") return null;
@@ -63,9 +65,26 @@ export async function runUpdate({ repositoryPath, historyPath, environment = pro
     if ((previousBytes === null) !== (currentBytes === null) || (previousBytes && !previousBytes.equals(currentBytes))) {
       throw new Error("Product data changed during update; publication stopped.");
     }
-    await publish({ stagedProducts, staging });
+    await publish({ stagedProducts, staging, stagedSiteAssets });
     published = true;
     await atomicWrite(productsPath, productBytes);
+    const desiredProductPages = new Set();
+    for (const asset of stagedSiteAssets) {
+      const destination = resolve(repositoryPath, asset.path);
+      if (!destination.startsWith(resolve(repositoryPath) + sep)) throw new Error("Generated site path escaped repository.");
+      await mkdir(dirname(destination), { recursive: true });
+      await atomicWrite(destination, await readFile(asset.stagedPath));
+      if (/^products\/\d{8,13}\.html$/.test(asset.path)) desiredProductPages.add(asset.path.replace(/^products\//, ""));
+    }
+    const productDirectory = resolve(repositoryPath, "products");
+    for (const name of await readdir(productDirectory).catch(error => {
+      if (error.code === "ENOENT") return [];
+      throw error;
+    })) {
+      if (/^\d{8,13}\.html$/.test(name) && !desiredProductPages.has(name)) {
+        await rm(join(productDirectory, name), { force: true });
+      }
+    }
     await finish();
     // This remains a Rakuten-only history. Merged prices are deliberately not
     // written into the old series; Yahoo/Keepa merges clear historical scores.

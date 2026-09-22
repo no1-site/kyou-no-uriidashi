@@ -35,6 +35,11 @@ function safeURL(value) {
   }
 }
 
+function productDetailURL(item) {
+  const jan = String(item?.product_code || "").trim();
+  return /^(?:\d{8}|\d{13})$/.test(jan) ? `products/${encodeURIComponent(jan)}.html` : "";
+}
+
 function amazonSearchURL(item) {
   const query = String(item?.product_code || item?.model || item?.name || "").trim();
   if (!query) return "";
@@ -421,7 +426,9 @@ function render(filter, visibleCount = 20) {
             ${escapeHTML(item.category)} ・ ${escapeHTML(item.shop)}
           </div>
 
-          <h3>${escapeHTML(item.name)}</h3>
+          <h3>${productDetailURL(item)
+            ? `<a class="product-title-link" href="${escapeHTML(productDetailURL(item))}">${escapeHTML(item.name)}</a>`
+            : escapeHTML(item.name)}</h3>
 
           <div class="price-line">
             ${compared ? `<span class="price-caption">${scored ? "送料込み表示の店の中で最安（税込）" : `掲載店の商品価格の最小値（税込・${postageLabel(comparisonOffers(item)[0])}）`}</span>` : ""}
