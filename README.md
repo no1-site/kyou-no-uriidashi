@@ -109,3 +109,17 @@ Amazon価格はKeepaの `BUY_BOX_SHIPPING`（新商品のBuy Box価格・送料�
 Keepa APIキーは `scripts/setup-keepa.cmd` で設定します。キーはWindowsユーザーに紐づく暗号化ファイル `%LOCALAPPDATA%\\KyouNoUriidashi\\keepa-credentials.xml` に保存し、GitHubには保存しません。Keepa未設定時は従来どおり楽天市場＋Yahoo!ショッピングだけで更新します。
 
 Keepa APIは有料サブスクリプション方式で、リクエストはトークンを消費します。現在の掲載数ではJANを最大100件まとめて照合する設計です。公開サービスでのデータ表示については、契約時に表示されるKeepaの最新利用条件も確認してください。
+
+
+## Buffer / X 自動投稿
+
+Buffer の X チャンネルを接続し API キーを設定すると、毎日の価格更新が GitHub へ正常に反映された後で SNS 投稿候補を生成し、Buffer の投稿キューへ自動追加します。
+
+- 平日（月〜金）は最大3件、土日は最大2件を追加します。実際の配信時刻は Buffer 側の投稿スケジュールを使います。
+- 同じ日に更新処理を再実行しても、`%LOCALAPPDATA%\\KyouNoUriidashi\\buffer-post-state.json` の記録により同じ自動投稿を重複追加しません。
+- Buffer API キーは `scripts/setup-buffer.cmd` で設定できます。クリップボードから読み取り、Windows ユーザーに紐づく暗号化ファイル `%LOCALAPPDATA%\\KyouNoUriidashi\\buffer-credentials.xml` に保存します。GitHub には保存しません。
+- 接続済みの X チャンネルが1つなら自動選択します。複数ある場合は `BUFFER_CHANNEL_NAME` で対象名を指定します。
+- Buffer への投入だけが失敗した場合、すでに完了した商品データの公開は取り消しません。失敗内容は `%LOCALAPPDATA%\\KyouNoUriidashi\\update.log` に残します。
+- API キーを更新・再発行した場合は、もう一度 `scripts/setup-buffer.cmd` を実行して暗号化保存を更新します。
+
+Buffer へ送る投稿本文は `scripts/generate-social-posts.mjs` が `.local/social-posts.json` に生成し、`scripts/publish-social-posts.mjs` が `addToQueue` で次の空き投稿枠へ追加します。
