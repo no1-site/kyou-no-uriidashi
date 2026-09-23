@@ -10,6 +10,8 @@ $configPath = Join-Path $configDirectory "rakuten-credentials.xml"
 $yahooConfigPath = Join-Path $configDirectory "yahoo-credentials.xml"
 $keepaConfigPath = Join-Path $configDirectory "keepa-credentials.xml"
 $valueCommerceConfigPath = Join-Path $configDirectory "valuecommerce-credentials.xml"
+$bufferConfigPath = Join-Path $configDirectory "buffer-credentials.xml"
+$bufferStatePath = Join-Path $configDirectory "buffer-post-state.json"
 $logPath = Join-Path $configDirectory "update.log"
 
 New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
@@ -98,6 +100,41 @@ try {
         throw "Staged update or publication failed. Inspect the update result before retrying."
     }
     Write-UpdateLog "Product data was sent to GitHub and local history was confirmed."
+
+    $socialPostsReady = $false
+    try {
+        & node (Join-Path $repositoryPath "scripts\generate-social-posts.mjs") |
+            Tee-Object -FilePath $logPath -Append
+        if ($LASTEXITCODE -ne 0) {
+            throw "SNS post candidate generation failed."
+        }
+        $socialPostsReady = $true
+        Write-UpdateLog "SNS post candidates generated."
+    }
+    catch {
+        Write-UpdateLog ("WARNING: " + $_.Exception.Message)
+    }
+
+    if ($socialPostsReady -and (Test-Path $bufferConfigPath)) {
+        try {
+            $bufferSettings = Import-Clixml -Path $bufferConfigPath
+            $env:BUFFER_API_KEY = Reveal-SecureValue $bufferSettings.ApiKey
+            $env:BUFFER_STATE_PATH = $bufferStatePath
+
+            & node (Join-Path $repositoryPath "scripts\publish-social-posts.mjs") |
+                Tee-Object -FilePath $logPath -Append
+            if ($LASTEXITCODE -ne 0) {
+                throw "Buffer queue publication failed."
+            }
+            Write-UpdateLog "SNS posts were added to the Buffer queue."
+        }
+        catch {
+            Write-UpdateLog ("WARNING: " + $_.Exception.Message + " Product publication remains complete.")
+        }
+    }
+    elseif ($socialPostsReady) {
+        Write-UpdateLog "Buffer credentials were not found; SNS queue publication was skipped."
+    }
 }
 catch {
     $exitCode = 1
@@ -116,6 +153,9 @@ finally {
     Remove-Item Env:VALUECOMMERCE_TOKEN -ErrorAction SilentlyContinue
     Remove-Item Env:VALUECOMMERCE_ALLOWED_EC_CODES -ErrorAction SilentlyContinue
     Remove-Item Env:VALUECOMMERCE_ALLOWED_MERCHANTS -ErrorAction SilentlyContinue
+    Remove-Item Env:BUFFER_API_KEY -ErrorAction SilentlyContinue
+    Remove-Item Env:BUFFER_STATE_PATH -ErrorAction SilentlyContinue
+    Remove-Item Env:BUFFER_CHANNEL_NAME -ErrorAction SilentlyContinue
 
     if ($ShutdownWhenNoUser) {
         $activeUser = (Get-CimInstance Win32_ComputerSystem).UserName
