@@ -3,6 +3,18 @@ import { dirname, join } from "node:path";
 import { validJAN, httpsURL, positiveNumber } from "./rakuten-comparison.mjs";
 
 export const siteBaseURL = "https://no1-site.github.io/kyou-no-uriidashi/";
+const googleAnalyticsMeasurementID = "G-DM19L1646S";
+
+function googleAnalyticsTag() {
+  return `  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsMeasurementID}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '${googleAnalyticsMeasurementID}');
+  </script>`;
+}
 
 const categorySlugs = new Map([
   ["家電", "kaden"],
@@ -154,6 +166,7 @@ export function renderProductPage(product, { baseURL = siteBaseURL, relatedProdu
   return `<!doctype html>
 <html lang="ja">
 <head>
+${googleAnalyticsTag()}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHTML(name)}の価格比較｜今日の売り出し</title>
@@ -275,6 +288,7 @@ export function renderCategoryPage(category, products, { baseURL = siteBaseURL }
   return `<!doctype html>
 <html lang="ja">
 <head>
+${googleAnalyticsTag()}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHTML(category)}の価格比較・値下がり商品｜今日の売り出し</title>
