@@ -25,11 +25,18 @@ export function tokyoDateKey(date = new Date()) {
 }
 
 export function postingTargetForDate(date = new Date()) {
-  const weekday = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: tokyoTimeZone,
-    weekday: "short"
-  }).format(date);
-  return weekday === "Sat" || weekday === "Sun" ? 2 : 3;
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
+  const minuteOfDay = Number(parts.hour) * 60 + Number(parts.minute);
+  const weekend = parts.weekday === "Sat" || parts.weekday === "Sun";
+  const slots = weekend ? [12 * 60, 19 * 60] : [10 * 60 + 30, 12 * 60, 19 * 60];
+  return slots.filter(slot => slot > minuteOfDay).length;
 }
 
 async function readState(path, dateKey) {
