@@ -22,6 +22,40 @@ function shorten(value, max = 46) {
   return chars.length <= max ? text : chars.slice(0, Math.max(1, max - 1)).join("") + "…";
 }
 
+const xURLPattern = /https?:\/\/[^\s]+/gu;
+
+function xCodePointWeight(char) {
+  const cp = char.codePointAt(0);
+  return (
+    (cp >= 0x0000 && cp <= 0x10ff) ||
+    (cp >= 0x2000 && cp <= 0x200d) ||
+    (cp >= 0x2010 && cp <= 0x201f) ||
+    (cp >= 0x2032 && cp <= 0x2037)
+  ) ? 1 : 2;
+}
+
+export function xWeightedLength(value) {
+  const text = String(value ?? "");
+  let length = 0;
+  let lastIndex = 0;
+  for (const match of text.matchAll(xURLPattern)) {
+    const before = text.slice(lastIndex, match.index);
+    for (const char of before) length += xCodePointWeight(char);
+    length += 23;
+    lastIndex = match.index + match[0].length;
+  }
+  for (const char of text.slice(lastIndex)) length += xCodePointWeight(char);
+  return length;
+}
+
+function fitXPost(makeText, initialNameLimit, minimumNameLimit = 6) {
+  for (let limit = initialNameLimit; limit >= minimumNameLimit; limit--) {
+    const text = makeText(limit);
+    if (xWeightedLength(text) <= 280) return text;
+  }
+  return makeText(minimumNameLimit);
+}
+
 function productPath(product) {
   const jan = validJAN(product?.product_code);
   return jan ? `products/${jan}.html` : "";
@@ -85,9 +119,9 @@ function productDropPost(product, baseURL) {
   const historical = positiveNumber(product.historical_price);
   const difference = Math.round(historical - current);
   const percent = safePercent(product.historical_discount_percent);
-  return [
+  return fitXPost(nameLimit => [
     "【PR】📉 値下がりチェック",
-    shorten(product.name, 62),
+    shorten(product.name, nameLimit),
     `現在 ${formatPrice(current)}`,
     `過去の記録価格 ${formatPrice(historical)}`,
     `記録価格より ${formatPrice(difference)} 低い（-${percent}%）`,
@@ -95,7 +129,7 @@ function productDropPost(product, baseURL) {
     "ショップ別価格はこちら👇",
     productURL(product, baseURL),
     "#価格比較 #節約 #今日の売り出し"
-  ].join("\n");
+  ].join("\n"), 62);
 }
 
 function categoryPost(product, baseURL) {
@@ -104,59 +138,63 @@ function categoryPost(product, baseURL) {
   const difference = Math.round(historical - current);
   const percent = safePercent(product.historical_discount_percent);
   const category = cleanText(product.category) || "商品";
-  return [
+  return fitXPost(nameLimit => [
     `【PR】🛒 ${category}の価格チェック`,
-    shorten(product.name, 58),
+    shorten(product.name, nameLimit),
     `現在 ${formatPrice(current)} / 記録価格より${formatPrice(difference)}低い（-${percent}%）`,
     "",
     "価格・送料は購入前に各ショップで確認👇",
     productURL(product, baseURL),
     "#今日の売り出し #価格比較"
-  ].join("\n");
+  ].join("\n"), 58);
 }
 
 function roundupPost(list, baseURL) {
   const top = list.slice(0, 3);
-  const lines = top.map((product, index) =>
-    `${index + 1}位 ${shorten(product.name, 28)} -${safePercent(product.historical_discount_percent)}%（${formatPrice(product.price)}）`
-  );
-  return [
-    "【PR】📉 今日の値下がりTOP3",
-    ...lines,
-    "",
-    "※過去の記録価格との比較です。価格・送料は購入前に確認👇",
-    new URL("#priceDrops", baseURL).href,
-    "#価格比較 #節約 #今日の売り出し"
-  ].join("\n");
+  return fitXPost(nameLimit => {
+    const lines = top.map((product, index) =>
+      `${index + 1}位 ${shorten(product.name, nameLimit)} -${safePercent(product.historical_discount_percent)}%（${formatPrice(product.price)}）`
+    );
+    return [
+      "【PR】📉 今日の値下がりTOP3",
+      ...lines,
+      "",
+      "※過去の記録価格との比較です。価格・送料は購入前に確認👇",
+      new URL("#priceDrops", baseURL).href,
+      "#価格比較 #節約 #今日の売り出し"
+    ].join("\n");
+  }, 28);
 }
 
 function currentProductPost(product, baseURL) {
   const category = cleanText(product.category) || "商品";
   const count = comparableOfferCount(product);
-  return [
+  return fitXPost(nameLimit => [
     `【PR】🔎 今日の${category}価格チェック`,
-    shorten(product.name, 62),
+    shorten(product.name, nameLimit),
     `掲載価格 ${formatPrice(product.price)}〜 / ${count}ショップを比較`,
     "",
     "送料・在庫など最新条件はこちら👇",
     productURL(product, baseURL),
     "#価格比較 #節約 #今日の売り出し"
-  ].join("\n");
+  ].join("\n"), 62);
 }
 
 function currentRoundupPost(list, baseURL) {
   const top = list.slice(0, 3);
-  const lines = top.map((product, index) =>
-    `${index + 1}. ${shorten(product.name, 28)}（${formatPrice(product.price)}〜）`
-  );
-  return [
-    "【PR】🛒 今日の価格比較3選",
-    ...lines,
-    "",
-    "同一商品として確認できたショップを比較しています👇",
-    new URL("#today", baseURL).href,
-    "#価格比較 #節約 #今日の売り出し"
-  ].join("\n");
+  return fitXPost(nameLimit => {
+    const lines = top.map((product, index) =>
+      `${index + 1}. ${shorten(product.name, nameLimit)}（${formatPrice(product.price)}〜）`
+    );
+    return [
+      "【PR】🛒 今日の価格比較3選",
+      ...lines,
+      "",
+      "同一商品として確認できたショップを比較しています👇",
+      new URL("#today", baseURL).href,
+      "#価格比較 #節約 #今日の売り出し"
+    ].join("\n");
+  }, 28);
 }
 
 function codePointLength(value) {
@@ -203,7 +241,8 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
 
     for (const post of posts) {
       post.length = codePointLength(post.text);
-      post.ready = post.length <= 260;
+      post.x_weighted_length = xWeightedLength(post.text);
+      post.ready = post.x_weighted_length <= 280;
     }
 
     return {
@@ -238,7 +277,8 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
 
   for (const post of posts) {
     post.length = codePointLength(post.text);
-    post.ready = post.length <= 260;
+    post.x_weighted_length = xWeightedLength(post.text);
+    post.ready = post.x_weighted_length <= 280;
   }
 
   return {

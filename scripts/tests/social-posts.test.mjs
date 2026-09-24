@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSocialPosts, currentComparisonCandidates, priceDropCandidates } from "../lib/social-posts.mjs";
+import { buildSocialPosts, currentComparisonCandidates, priceDropCandidates, xWeightedLength } from "../lib/social-posts.mjs";
 
 const products = [
   {
@@ -75,4 +75,23 @@ test("social generator falls back to current-price posts when history is not rea
   assert.ok(result.posts.every(post => !post.text.includes("値下がり")));
   assert.ok(result.posts.every(post => post.text.includes("no1-site.github.io/kyou-no-uriidashi")));
   assert.match(result.posts[1].text, /掲載価格/);
+});
+
+
+test("X weighted length counts Japanese more heavily and URLs as transformed links", () => {
+  assert.equal(xWeightedLength("abc"), 3);
+  assert.equal(xWeightedLength("価格"), 4);
+  assert.equal(xWeightedLength("https://example.com/very/long/path"), 23);
+});
+
+test("long Japanese product names are shortened to X's 280 weighted-character limit", () => {
+  const longName = "超長い日本語の商品名".repeat(18);
+  const input = products.map((product, index) => ({
+    ...product,
+    name: longName + index
+  }));
+  const result = buildSocialPosts(input);
+  assert.equal(result.posts.length, 3);
+  assert.ok(result.posts.every(post => post.ready));
+  assert.ok(result.posts.every(post => post.x_weighted_length <= 280));
 });
