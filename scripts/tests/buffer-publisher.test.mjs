@@ -53,10 +53,14 @@ const samplePosts = [1, 2, 3].map(number => ({
   ready: true
 }));
 
-test("Tokyo posting target is three on weekdays and two on weekends", () => {
+test("Tokyo posting target counts only remaining slots for the local day", () => {
   assert.equal(tokyoDateKey(new Date("2026-09-23T01:00:00Z")), "2026-09-23");
-  assert.equal(postingTargetForDate(new Date("2026-09-23T01:00:00Z")), 3);
-  assert.equal(postingTargetForDate(new Date("2026-09-26T01:00:00Z")), 2);
+  assert.equal(postingTargetForDate(new Date("2026-09-23T01:00:00Z")), 3); // 10:00 JST
+  assert.equal(postingTargetForDate(new Date("2026-09-23T01:36:00Z")), 2); // 10:36 JST
+  assert.equal(postingTargetForDate(new Date("2026-09-23T03:01:00Z")), 1); // 12:01 JST
+  assert.equal(postingTargetForDate(new Date("2026-09-23T10:01:00Z")), 0); // 19:01 JST
+  assert.equal(postingTargetForDate(new Date("2026-09-26T01:00:00Z")), 2); // Sat 10:00 JST
+  assert.equal(postingTargetForDate(new Date("2026-09-26T03:01:00Z")), 1); // Sat 12:01 JST
 });
 
 test("publisher queues three weekday posts once and persists idempotency state", async () => {
