@@ -33,6 +33,8 @@ test("product page renders static SEO metadata, shop links and safe markup", () 
   assert.match(html, /AggregateOffer/);
   assert.match(html, /BreadcrumbList/);
   assert.match(html, /掲載ショップ/);
+  assert.match(html, /G-DM19L1646S/);
+  assert.match(html, /googletagmanager\.com\/gtag\/js/);
   assert.doesNotMatch(html, /価格.com/);
 
   const malicious = renderProductPage({ ...product, name: '<script>alert("x")</script>' });
@@ -47,6 +49,8 @@ test("category pages use stable slugs and contain crawlable product links", () =
   assert.match(html, /食品の価格比較/);
   assert.match(html, /\.\.\/products\/4901111784185\.html/);
   assert.match(html, /rel="canonical"/);
+  assert.match(html, /G-DM19L1646S/);
+  assert.match(html, /googletagmanager\.com\/gtag\/js/);
 });
 
 test("robots advertises the absolute sitemap URL", () => {

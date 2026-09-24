@@ -61,9 +61,18 @@ function productPath(product) {
   return jan ? `products/${jan}.html` : "";
 }
 
-function productURL(product, baseURL = siteBaseURL) {
+function trackedURL(value, content) {
+  const url = value instanceof URL ? new URL(value.href) : new URL(value);
+  url.searchParams.set("utm_source", "x");
+  url.searchParams.set("utm_medium", "social");
+  url.searchParams.set("utm_campaign", "daily_price");
+  url.searchParams.set("utm_content", content);
+  return url.href;
+}
+
+function productURL(product, baseURL = siteBaseURL, content = "product") {
   const path = productPath(product);
-  return path ? new URL(path, baseURL).href : "";
+  return path ? trackedURL(new URL(path, baseURL), content) : "";
 }
 
 function comparableOfferCount(product) {
@@ -127,7 +136,7 @@ function productDropPost(product, baseURL) {
     `記録価格より ${formatPrice(difference)} 低い（-${percent}%）`,
     "",
     "ショップ別価格はこちら👇",
-    productURL(product, baseURL),
+    productURL(product, baseURL, "price_drop_product"),
     "#価格比較 #節約 #今日の売り出し"
   ].join("\n"), 62);
 }
@@ -144,7 +153,7 @@ function categoryPost(product, baseURL) {
     `現在 ${formatPrice(current)} / 記録価格より${formatPrice(difference)}低い（-${percent}%）`,
     "",
     "価格・送料は購入前に各ショップで確認👇",
-    productURL(product, baseURL),
+    productURL(product, baseURL, "price_drop_category"),
     "#今日の売り出し #価格比較"
   ].join("\n"), 58);
 }
@@ -160,13 +169,13 @@ function roundupPost(list, baseURL) {
       ...lines,
       "",
       "※過去の記録価格との比較です。価格・送料は購入前に確認👇",
-      new URL("#priceDrops", baseURL).href,
+      trackedURL(new URL("#priceDrops", baseURL), "price_drop_roundup"),
       "#価格比較 #節約 #今日の売り出し"
     ].join("\n");
   }, 28);
 }
 
-function currentProductPost(product, baseURL) {
+function currentProductPost(product, baseURL, content = "current_product") {
   const category = cleanText(product.category) || "商品";
   const count = comparableOfferCount(product);
   return fitXPost(nameLimit => [
@@ -175,7 +184,7 @@ function currentProductPost(product, baseURL) {
     `掲載価格 ${formatPrice(product.price)}〜 / ${count}ショップを比較`,
     "",
     "送料・在庫など最新条件はこちら👇",
-    productURL(product, baseURL),
+    productURL(product, baseURL, content),
     "#価格比較 #節約 #今日の売り出し"
   ].join("\n"), 62);
 }
@@ -191,7 +200,7 @@ function currentRoundupPost(list, baseURL) {
       ...lines,
       "",
       "同一商品として確認できたショップを比較しています👇",
-      new URL("#today", baseURL).href,
+      trackedURL(new URL("#today", baseURL), "current_roundup"),
       "#価格比較 #節約 #今日の売り出し"
     ].join("\n");
   }, 28);
@@ -226,7 +235,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
 
     posts.push({
       type: "current_product",
-      text: currentProductPost(current[0], baseURL),
+      text: currentProductPost(current[0], baseURL, "current_product"),
       products: [validJAN(current[0].product_code)]
     });
 
@@ -234,7 +243,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     if (alternateCurrent) {
       posts.push({
         type: "current_category",
-        text: currentProductPost(alternateCurrent, baseURL),
+        text: currentProductPost(alternateCurrent, baseURL, "current_category"),
         products: [validJAN(alternateCurrent.product_code)]
       });
     }
