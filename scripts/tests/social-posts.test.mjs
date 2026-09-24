@@ -95,3 +95,27 @@ test("long Japanese product names are shortened to X's 280 weighted-character li
   assert.ok(result.posts.every(post => post.ready));
   assert.ok(result.posts.every(post => post.x_weighted_length <= 280));
 });
+
+
+test("social post links include GA4 UTM parameters for X", () => {
+  const history = buildSocialPosts(products);
+  for (const post of history.posts) {
+    assert.match(post.text, /utm_source=x/);
+    assert.match(post.text, /utm_medium=social/);
+    assert.match(post.text, /utm_campaign=daily_price/);
+    assert.match(post.text, /utm_content=/);
+  }
+
+  const currentInput = products.map(product => ({
+    ...product,
+    historical_price: null,
+    historical_discount_percent: null
+  }));
+  const current = buildSocialPosts(currentInput);
+  for (const post of current.posts) {
+    assert.match(post.text, /utm_source=x/);
+    assert.match(post.text, /utm_medium=social/);
+    assert.match(post.text, /utm_campaign=daily_price/);
+    assert.match(post.text, /utm_content=/);
+  }
+});
