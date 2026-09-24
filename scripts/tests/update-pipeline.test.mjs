@@ -104,6 +104,31 @@ test("unconfigured Yahoo/Keepa stages are skipped, keeping Rakuten updates suppo
   assert.deepEqual(stages, ["rakuten"]);
 });
 
+
+test("ValueCommerce failure is nonblocking because it is an optional comparison source", async () => {
+  const config = await setup();
+  const stages = [];
+  let published = false;
+  const env = environment({
+    KEEPA_API_KEY: "",
+    VALUECOMMERCE_TOKEN: "fixture-valuecommerce",
+    VALUECOMMERCE_ALLOWED_EC_CODES: "fixture"
+  });
+  const result = await runUpdate({
+    ...config,
+    environment: env,
+    runStage: async (name, stageEnv) => {
+      stages.push(name);
+      if (name === "valuecommerce") throw new Error("fixture ValueCommerce outage");
+      return runStage(name, stageEnv);
+    },
+    publish: async () => { published = true; }
+  });
+  assert.deepEqual(stages, ["rakuten", "yahoo", "valuecommerce"]);
+  assert.equal(published, true);
+  assert.equal(result.count, 100);
+});
+
 test("publication validation failure retains live data", async () => {
   const config = await setup();
   await assert.rejects(runUpdate({ ...config, environment: environment(),
