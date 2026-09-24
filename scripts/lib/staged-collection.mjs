@@ -56,7 +56,16 @@ export async function collectStagedProducts({ staging, historyPath, previous, en
     throw new Error("Rakuten collection contained API errors; publication stopped.");
   }
   if (environment.YAHOO_CLIENT_ID) await runStage("yahoo", stagedEnvironment);
-  if (environment.VALUECOMMERCE_TOKEN && (environment.VALUECOMMERCE_ALLOWED_EC_CODES || environment.VALUECOMMERCE_ALLOWED_MERCHANTS)) await runStage("valuecommerce", stagedEnvironment);
+  if (environment.VALUECOMMERCE_TOKEN && (environment.VALUECOMMERCE_ALLOWED_EC_CODES || environment.VALUECOMMERCE_ALLOWED_MERCHANTS)) {
+    try {
+      await runStage("valuecommerce", stagedEnvironment);
+    } catch {
+      // ValueCommerce is an optional comparison source. A partner-side outage,
+      // auth issue, or response change must not block the core Rakuten/Yahoo
+      // publication or the downstream Buffer queue.
+      console.warn("[VALUECOMMERCE] Optional comparison failed; continuing without partner offers.");
+    }
+  }
   if (stagedEnvironment.KEEPA_API_KEY) await runStage("keepa", stagedEnvironment);
   const products = finalizeProducts(JSON.parse(await readFile(stagedProducts, "utf8")));
   validatePublication(products, previous);
