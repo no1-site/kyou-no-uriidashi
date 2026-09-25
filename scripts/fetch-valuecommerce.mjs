@@ -59,9 +59,14 @@ async function searchValueCommerce(jan, merchant = "") {
   } catch {
     throw new Error("ValueCommerce invalid_json");
   }
-  if (data?.status !== "OK" || !Array.isArray(data?.items)) {
+  if (data?.status !== "OK") {
     throw new Error(`ValueCommerce ${String(data?.status || "invalid_response").replace(/[^A-Za-z0-9_-]/g, "_")}`);
   }
+  // ValueCommerce can return status=OK with no items field when a valid
+  // search simply has zero matches. Treat that as an empty result, not an API
+  // failure. A non-array items value is still considered a malformed response.
+  if (data.items == null) return [];
+  if (!Array.isArray(data.items)) throw new Error("ValueCommerce invalid_response");
   return data.items;
 }
 

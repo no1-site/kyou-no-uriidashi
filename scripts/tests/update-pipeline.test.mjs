@@ -177,3 +177,28 @@ test("post-publication local failure keeps old history and recovery files, block
   assert.equal(JSON.parse(await readFile(join(lock.staging, "price-history.json"), "utf8")).updated_at.length > 0, true);
   await assert.rejects(runUpdate({ ...config, environment: environment(), runStage, publish: async () => {} }), /already running/);
 });
+
+
+test("ValueCommerce optional stage may complete with no matching offers without blocking publication", async () => {
+  const config = await setup();
+  const stages = [];
+  let published = false;
+  const env = environment({
+    KEEPA_API_KEY: "",
+    VALUECOMMERCE_TOKEN: "fixture-valuecommerce",
+    VALUECOMMERCE_ALLOWED_MERCHANTS: "ヤマダモール"
+  });
+  const result = await runUpdate({
+    ...config,
+    environment: env,
+    runStage: async (name, stageEnv) => {
+      stages.push(name);
+      if (name === "valuecommerce") return;
+      return runStage(name, stageEnv);
+    },
+    publish: async () => { published = true; }
+  });
+  assert.deepEqual(stages, ["rakuten", "yahoo", "valuecommerce"]);
+  assert.equal(published, true);
+  assert.equal(result.count, 100);
+});
