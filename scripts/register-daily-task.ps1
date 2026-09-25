@@ -23,7 +23,7 @@ try {
         -Argument $arguments `
         -WorkingDirectory $repositoryPath
 
-    $trigger = New-ScheduledTaskTrigger -Daily -At "10:10"
+    $trigger = New-ScheduledTaskTrigger -Daily -At "10:00"
 
     $principal = New-ScheduledTaskPrincipal `
         -UserId $account `
@@ -35,14 +35,14 @@ try {
         -AllowStartIfOnBatteries `
         -DontStopIfGoingOnBatteries `
         -MultipleInstances IgnoreNew `
-        -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
+        -ExecutionTimeLimit (New-TimeSpan -Minutes 45)
 
     $task = New-ScheduledTask `
         -Action $action `
         -Trigger $trigger `
         -Principal $principal `
         -Settings $settings `
-        -Description "Update Rakuten products and publish Kyou no Uriidashi every day at 10:10."
+        -Description "Update Rakuten products and publish Kyou no Uriidashi every day at 10:00."
 
     Register-ScheduledTask `
         -TaskName $taskName `
@@ -55,11 +55,11 @@ try {
     Write-Host ""
     Write-Host "Daily update task was registered successfully."
     Write-Host ("Task name: " + $registered.TaskName)
-    Write-Host ("Schedule: Every day at 10:10")
+    Write-Host ("Schedule: Every day at 10:00")
     Write-Host ("Next run: " + $info.NextRunTime)
     Write-Host ""
     Write-Host "The task runs under the current Windows user after sign-in."
-    Write-Host "If 09:40 was missed, Windows will start it when available."
+    Write-Host "If 10:00 was missed, Windows will start it when available."
 }
 catch {
     Write-Host ""
