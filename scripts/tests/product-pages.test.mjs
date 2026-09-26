@@ -84,10 +84,10 @@ test("site asset builder emits product, six categories, sitemap and robots", () 
 
 
 test("generated product and category pages include ValueCommerce LinkSwitch", () => {
-  const productHTML = renderProductPage(sampleProducts[0], { relatedProducts: sampleProducts });
+  const productHTML = renderProductPage(product, { relatedProducts: [product] });
   assert.match(productHTML, /vc_pid = "892713174"/);
   assert.match(productHTML, /aml\.valuecommerce\.com\/vcdal\.js/);
-  const categoryHTML = renderCategoryPage(sampleProducts[0].category, sampleProducts);
+  const categoryHTML = renderCategoryPage(product.category, [product]);
   assert.match(categoryHTML, /vc_pid = "892713174"/);
   assert.match(categoryHTML, /aml\.valuecommerce\.com\/vcdal\.js/);
 });
