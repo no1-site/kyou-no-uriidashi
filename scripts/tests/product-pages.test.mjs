@@ -81,3 +81,13 @@ test("site asset builder emits product, six categories, sitemap and robots", () 
   assert.ok(paths.includes("robots.txt"));
   assert.ok(assets.every(asset => typeof asset.content === "string" && asset.content.length > 20));
 });
+
+
+test("generated product and category pages include ValueCommerce LinkSwitch", () => {
+  const productHTML = renderProductPage(sampleProducts[0], { relatedProducts: sampleProducts });
+  assert.match(productHTML, /vc_pid = "892713174"/);
+  assert.match(productHTML, /aml\.valuecommerce\.com\/vcdal\.js/);
+  const categoryHTML = renderCategoryPage(sampleProducts[0].category, sampleProducts);
+  assert.match(categoryHTML, /vc_pid = "892713174"/);
+  assert.match(categoryHTML, /aml\.valuecommerce\.com\/vcdal\.js/);
+});
