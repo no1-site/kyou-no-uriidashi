@@ -94,7 +94,7 @@ try {
     }
 
     $env:UPDATE_GIT_PATH = $gitExecutable
-    & node (Join-Path $repositoryPath "scripts\run-update.mjs") |
+    & node (Join-Path $repositoryPath "scripts\run-update.mjs") 2>&1 |
         Tee-Object -FilePath $logPath -Append
     if ($LASTEXITCODE -ne 0) {
         throw "Staged update or publication failed. Inspect the update result before retrying."
