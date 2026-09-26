@@ -119,3 +119,10 @@ test("social post links include GA4 UTM parameters for X", () => {
     assert.match(post.text, /utm_content=/);
   }
 });
+
+
+test("generated social posts include the Tokyo date so consecutive days are not exact duplicates", () => {
+  const result = buildSocialPosts(products, { generatedAt: "2026-09-26T02:00:00.000Z" });
+  assert.ok(result.posts.every(post => post.text.includes("9/26")));
+  assert.ok(result.posts.every(post => post.x_weighted_length <= 280));
+});
