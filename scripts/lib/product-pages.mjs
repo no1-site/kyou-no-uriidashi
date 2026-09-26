@@ -57,6 +57,23 @@ function dateOnly(value) {
   return new Date(timestamp).toISOString().slice(0, 10);
 }
 
+function marketplaceNamesForOffers(offers) {
+  const names = [];
+  const add = name => {
+    if (name && !names.includes(name)) names.push(name);
+  };
+  for (const offer of Array.isArray(offers) ? offers : []) {
+    if (offer.marketplace_code === "rakuten") add("楽天市場");
+    else if (offer.marketplace_code === "yahoo") add("Yahoo!ショッピング");
+    else if (offer.marketplace_code === "amazon") add("Amazon.co.jp");
+    else if (offer.marketplace_code === "valuecommerce") {
+      add(String(offer.shop_name || offer.shopName || "").includes("ヤマダ") ? "ヤマダモール" : "提携EC");
+    }
+    else add(String(offer.marketplace || "").trim());
+  }
+  return names;
+}
+
 function validOffers(product) {
   const shops = new Map();
   for (const offer of Array.isArray(product?.offers) ? product.offers : []) {
@@ -110,7 +127,7 @@ export function renderProductPage(product, { baseURL = siteBaseURL, relatedProdu
   const historicalPrice = positiveNumber(product?.historical_price);
   const historicalDifference = historicalPrice && currentPrice && historicalPrice > currentPrice
     ? Math.round(historicalPrice - currentPrice) : null;
-  const marketplaceNames = [...new Set(offers.map(offer => String(offer.marketplace || "").trim()).filter(Boolean))];
+  const marketplaceNames = marketplaceNamesForOffers(offers);
   const scope = marketplaceNames.length ? marketplaceNames.join("・") : "掲載ショップ";
   const comparisonSummary = offers.length
     ? `${offers.length}ショップを掲載し、掲載価格は${formatPrice(currentPrice)}から${formatPrice(highestPrice)}です。${includedCount ? `送料込み表示は${includedCount}ショップです。` : ""}`
@@ -229,6 +246,7 @@ ${valueCommerceLinkSwitchTag()}
 
     <section class="product-facts" aria-label="価格比較状況">
       <div><span>掲載ショップ</span><strong>${offers.length}店</strong></div>
+      <div><span>掲載モール</span><strong>${escapeHTML(scope)}</strong></div>
       <div><span>掲載価格帯</span><strong>${escapeHTML(formatPrice(currentPrice))}〜${escapeHTML(formatPrice(highestPrice))}</strong></div>
       <div><span>送料込み表示</span><strong>${includedCount}店</strong></div>
       ${historicalDifference ? `<div><span>過去の記録価格との差</span><strong>${escapeHTML(formatPrice(historicalDifference))}低い</strong></div>` : ""}
@@ -273,7 +291,10 @@ export function renderCategoryPage(category, products, { baseURL = siteBaseURL }
   const latest = checkedDates.at(-1) || "";
   const cards = list.map(item => {
     const image = httpsURL(item.image_url);
-    const offerCount = validOffers(item).length;
+    const itemOffers = validOffers(item);
+    const offerCount = itemOffers.length;
+    const itemMarketplaces = marketplaceNamesForOffers(itemOffers);
+    const marketplaceText = itemMarketplaces.length ? itemMarketplaces.join("・") : "掲載ショップ";
     return `<article class="category-product-card">
       <a class="category-product-visual" href="../${escapeHTML(productPagePath(item))}">
         ${image ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(item.name)}" loading="lazy" referrerpolicy="no-referrer">` : "<span>🛍️</span>"}
@@ -281,7 +302,7 @@ export function renderCategoryPage(category, products, { baseURL = siteBaseURL }
       <div>
         <h2><a href="../${escapeHTML(productPagePath(item))}">${escapeHTML(item.name)}</a></h2>
         <strong>${escapeHTML(formatPrice(item.price))}</strong>
-        <p>${offerCount ? `${offerCount}ショップの価格を掲載` : "参考価格を掲載"}${item.historical_discount_percent ? ` ／ 過去の記録価格より${Math.round(Number(item.historical_discount_percent))}%低い` : ""}</p>
+        <p>${offerCount ? `${offerCount}ショップの価格を掲載 ／ 掲載モール：${escapeHTML(marketplaceText)}` : "参考価格を掲載"}${item.historical_discount_percent ? ` ／ 過去の記録価格より${Math.round(Number(item.historical_discount_percent))}%低い` : ""}</p>
       </div>
     </article>`;
   }).join("");

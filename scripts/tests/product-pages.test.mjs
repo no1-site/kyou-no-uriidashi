@@ -33,6 +33,8 @@ test("product page renders static SEO metadata, shop links and safe markup", () 
   assert.match(html, /AggregateOffer/);
   assert.match(html, /BreadcrumbList/);
   assert.match(html, /掲載ショップ/);
+  assert.match(html, /掲載モール/);
+  assert.match(html, /楽天市場・Yahoo!ショッピング/);
   assert.match(html, /G-DM19L1646S/);
   assert.match(html, /googletagmanager\.com\/gtag\/js/);
   assert.doesNotMatch(html, /価格.com/);
@@ -51,6 +53,7 @@ test("category pages use stable slugs and contain crawlable product links", () =
   assert.match(html, /rel="canonical"/);
   assert.match(html, /G-DM19L1646S/);
   assert.match(html, /googletagmanager\.com\/gtag\/js/);
+  assert.match(html, /掲載モール：楽天市場・Yahoo!ショッピング/);
 });
 
 test("robots advertises the absolute sitemap URL", () => {
