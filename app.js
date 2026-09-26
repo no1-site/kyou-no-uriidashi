@@ -115,6 +115,23 @@ function comparisonOffers(item) {
   return [...shops.values()].sort((a, b) => Number(a.price) - Number(b.price));
 }
 
+function marketplaceLabels(item) {
+  const names = [];
+  const add = name => {
+    if (name && !names.includes(name)) names.push(name);
+  };
+  for (const offer of comparisonOffers(item)) {
+    if (offer.marketplace_code === "rakuten") add("楽天市場");
+    else if (offer.marketplace_code === "yahoo") add("Yahoo!ショッピング");
+    else if (offer.marketplace_code === "amazon") add("Amazon.co.jp");
+    else if (offer.marketplace_code === "valuecommerce") {
+      add(String(offer.shop_name || "").includes("ヤマダ") ? "ヤマダモール" : "提携EC");
+    }
+    else add(String(offer.marketplace || "").trim());
+  }
+  return names;
+}
+
 function renderShopTable(item) {
   const offers = comparisonOffers(item);
   const included = includedOffers(offers);
@@ -350,6 +367,8 @@ function render(filter, visibleCount = 20) {
       : "レビュー情報なし";
 
     const offerCount = comparisonOffers(item).length;
+    const itemMarketplaces = marketplaceLabels(item);
+    const marketplaceText = itemMarketplaces.length ? itemMarketplaces.join("＋") : "掲載ショップ";
     const included = includedOffers(comparisonOffers(item));
     const comparisonCount = included.length;
     const discount = scored
@@ -423,7 +442,7 @@ function render(filter, visibleCount = 20) {
         </div>
         <div class="deal-body">
           <div class="category">
-            ${escapeHTML(item.category)} ・ ${escapeHTML(item.shop)}
+            ${escapeHTML(item.category)} ・ ${escapeHTML(marketplaceText)}
           </div>
 
           <h3>${productDetailURL(item)
@@ -443,6 +462,7 @@ function render(filter, visibleCount = 20) {
           <div class="meta">
             ${comparisonBadges}
             ${historyBadge}
+            <span class="badge">掲載モール：${escapeHTML(marketplaceText)}</span>
             <span class="badge">${escapeHTML(reviewText)}</span>
           </div>
 
