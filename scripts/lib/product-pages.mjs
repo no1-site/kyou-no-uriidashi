@@ -4,6 +4,15 @@ import { validJAN, httpsURL, positiveNumber } from "./rakuten-comparison.mjs";
 
 export const siteBaseURL = "https://no1-site.github.io/kyou-no-uriidashi/";
 const googleAnalyticsMeasurementID = "G-DM19L1646S";
+const valueCommercePid = "892713174";
+
+function valueCommerceLinkSwitchTag() {
+  return `  <!-- ValueCommerce LinkSwitch -->
+  <script type="text/javascript" language="javascript">
+    var vc_pid = "${valueCommercePid}";
+  </script>
+  <script type="text/javascript" src="//aml.valuecommerce.com/vcdal.js" async></script>`;
+}
 
 function googleAnalyticsTag() {
   return `  <!-- Google tag (gtag.js) -->
@@ -167,6 +176,7 @@ export function renderProductPage(product, { baseURL = siteBaseURL, relatedProdu
 <html lang="ja">
 <head>
 ${googleAnalyticsTag()}
+${valueCommerceLinkSwitchTag()}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHTML(name)}の価格比較｜今日の売り出し</title>
@@ -289,6 +299,7 @@ export function renderCategoryPage(category, products, { baseURL = siteBaseURL }
 <html lang="ja">
 <head>
 ${googleAnalyticsTag()}
+${valueCommerceLinkSwitchTag()}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHTML(category)}の価格比較・値下がり商品｜今日の売り出し</title>
