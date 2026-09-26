@@ -125,3 +125,39 @@ test("channel selection refuses ambiguity unless a name is configured", async ()
   });
   assert.equal(selected.id, "x2");
 });
+
+
+test("confirmed Buffer duplicate does not abort the rest of the queue", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buffer-duplicate-"));
+  let createCount = 0;
+  const fetchImpl = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    if (body.query.includes("account { organizations")) {
+      return jsonResponse({ data: { account: { organizations: [{ id: "org1", name: "My organization" }] } } });
+    }
+    if (body.query.includes("channels(input:")) {
+      return jsonResponse({ data: { channels: [{ id: "x1", name: "uriidashi_ai0922", service: "twitter" }] } });
+    }
+    if (body.query.includes("mutation CreatePost")) {
+      createCount++;
+      if (createCount === 1) {
+        return jsonResponse({ data: { createPost: { message: "Whoops, it looks like you've already got this one scheduled or posted around the same time. We're not able to post the same thing twice so close together." } } });
+      }
+      return jsonResponse({ data: { createPost: { post: { id: "p2", text: body.variables.input.text, dueAt: "2026-09-26T10:00:00.000Z" } } } });
+    }
+    throw new Error("Unexpected Buffer request");
+  };
+
+  const result = await publishSocialPosts({
+    apiKey: "secret",
+    posts: samplePosts,
+    statePath: join(dir, "state.json"),
+    now: new Date("2026-09-26T01:10:00Z"),
+    fetchImpl
+  });
+  assert.equal(result.queued.length, 1);
+  assert.equal(createCount, 2);
+  const state = JSON.parse(await readFile(join(dir, "state.json"), "utf8"));
+  assert.equal(state.posts.length, 2);
+  assert.equal(state.posts[0].duplicate_confirmed, true);
+});

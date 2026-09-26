@@ -123,13 +123,13 @@ export function priceDropCandidates(products) {
     );
 }
 
-function productDropPost(product, baseURL) {
+function productDropPost(product, baseURL, dateLabel = "") {
   const current = positiveNumber(product.price);
   const historical = positiveNumber(product.historical_price);
   const difference = Math.round(historical - current);
   const percent = safePercent(product.historical_discount_percent);
   return fitXPost(nameLimit => [
-    "【PR】📉 値下がりチェック",
+    `【PR】📉 ${dateLabel ? dateLabel + " " : ""}値下がりチェック`,
     shorten(product.name, nameLimit),
     `現在 ${formatPrice(current)}`,
     `過去の記録価格 ${formatPrice(historical)}`,
@@ -141,14 +141,14 @@ function productDropPost(product, baseURL) {
   ].join("\n"), 62);
 }
 
-function categoryPost(product, baseURL) {
+function categoryPost(product, baseURL, dateLabel = "") {
   const current = positiveNumber(product.price);
   const historical = positiveNumber(product.historical_price);
   const difference = Math.round(historical - current);
   const percent = safePercent(product.historical_discount_percent);
   const category = cleanText(product.category) || "商品";
   return fitXPost(nameLimit => [
-    `【PR】🛒 ${category}の価格チェック`,
+    `【PR】🛒 ${dateLabel ? dateLabel + " " : ""}${category}の価格チェック`,
     shorten(product.name, nameLimit),
     `現在 ${formatPrice(current)} / 記録価格より${formatPrice(difference)}低い（-${percent}%）`,
     "",
@@ -158,14 +158,14 @@ function categoryPost(product, baseURL) {
   ].join("\n"), 58);
 }
 
-function roundupPost(list, baseURL) {
+function roundupPost(list, baseURL, dateLabel = "") {
   const top = list.slice(0, 3);
   return fitXPost(nameLimit => {
     const lines = top.map((product, index) =>
       `${index + 1}位 ${shorten(product.name, nameLimit)} -${safePercent(product.historical_discount_percent)}%（${formatPrice(product.price)}）`
     );
     return [
-      "【PR】📉 今日の値下がりTOP3",
+      `【PR】📉 ${dateLabel ? dateLabel + " " : ""}今日の値下がりTOP3`,
       ...lines,
       "",
       "※過去の記録価格との比較です。価格・送料は購入前に確認👇",
@@ -175,11 +175,11 @@ function roundupPost(list, baseURL) {
   }, 28);
 }
 
-function currentProductPost(product, baseURL, content = "current_product") {
+function currentProductPost(product, baseURL, content = "current_product", dateLabel = "") {
   const category = cleanText(product.category) || "商品";
   const count = comparableOfferCount(product);
   return fitXPost(nameLimit => [
-    `【PR】🔎 今日の${category}価格チェック`,
+    `【PR】🔎 ${dateLabel ? dateLabel + " " : ""}今日の${category}価格チェック`,
     shorten(product.name, nameLimit),
     `掲載価格 ${formatPrice(product.price)}〜 / ${count}ショップを比較`,
     "",
@@ -189,14 +189,14 @@ function currentProductPost(product, baseURL, content = "current_product") {
   ].join("\n"), 62);
 }
 
-function currentRoundupPost(list, baseURL) {
+function currentRoundupPost(list, baseURL, dateLabel = "") {
   const top = list.slice(0, 3);
   return fitXPost(nameLimit => {
     const lines = top.map((product, index) =>
       `${index + 1}. ${shorten(product.name, nameLimit)}（${formatPrice(product.price)}〜）`
     );
     return [
-      "【PR】🛒 今日の価格比較3選",
+      `【PR】🛒 ${dateLabel ? dateLabel + " " : ""}今日の価格比較3選`,
       ...lines,
       "",
       "同一商品として確認できたショップを比較しています👇",
@@ -213,6 +213,10 @@ function codePointLength(value) {
 export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt = new Date().toISOString() } = {}) {
   const candidates = priceDropCandidates(products);
   const posts = [];
+  const generatedDate = new Date(generatedAt);
+  const dateLabel = Number.isFinite(generatedDate.getTime())
+    ? new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" }).format(generatedDate)
+    : "";
 
   if (!candidates.length) {
     const current = currentComparisonCandidates(products);
@@ -228,14 +232,14 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     if (current.length >= 2) {
       posts.push({
         type: "current_roundup",
-        text: currentRoundupPost(current, baseURL),
+        text: currentRoundupPost(current, baseURL, dateLabel),
         products: current.slice(0, 3).map(product => validJAN(product.product_code))
       });
     }
 
     posts.push({
       type: "current_product",
-      text: currentProductPost(current[0], baseURL, "current_product"),
+      text: currentProductPost(current[0], baseURL, "current_product", dateLabel),
       products: [validJAN(current[0].product_code)]
     });
 
@@ -243,7 +247,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     if (alternateCurrent) {
       posts.push({
         type: "current_category",
-        text: currentProductPost(alternateCurrent, baseURL, "current_category"),
+        text: currentProductPost(alternateCurrent, baseURL, "current_category", dateLabel),
         products: [validJAN(alternateCurrent.product_code)]
       });
     }
@@ -265,13 +269,13 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
   if (candidates.length >= 2) {
     posts.push({
       type: "roundup",
-      text: roundupPost(candidates, baseURL),
+      text: roundupPost(candidates, baseURL, dateLabel),
       products: candidates.slice(0, 3).map(product => validJAN(product.product_code))
     });
   }
   posts.push({
     type: "product",
-    text: productDropPost(candidates[0], baseURL),
+    text: productDropPost(candidates[0], baseURL, dateLabel),
     products: [validJAN(candidates[0].product_code)]
   });
 
@@ -279,7 +283,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
   if (alternate) {
     posts.push({
       type: "category",
-      text: categoryPost(alternate, baseURL),
+      text: categoryPost(alternate, baseURL, dateLabel),
       products: [validJAN(alternate.product_code)]
     });
   }

@@ -110,6 +110,12 @@ export async function findTwitterChannel({ apiKey, channelName = "", fetchImpl =
   throw new Error("Multiple Buffer X channels were found. Set BUFFER_CHANNEL_NAME.");
 }
 
+function isDuplicatePostError(message) {
+  const text = String(message || "").toLowerCase();
+  return text.includes("already got this one scheduled or posted") ||
+    text.includes("same thing twice so close together");
+}
+
 export async function createQueuedPost({ apiKey, channelId, text, fetchImpl = fetch }) {
   const data = await bufferGraphQL({
     apiKey,
@@ -185,21 +191,35 @@ export async function publishSocialPosts({
   const channel = await findTwitterChannel({ apiKey, channelName, fetchImpl });
   const queued = [];
   for (const post of toQueue) {
-    const created = await createQueuedPost({
-      apiKey,
-      channelId: String(channel.id),
-      text: String(post.text),
-      fetchImpl
-    });
-    const record = {
-      type: String(post.type || "post"),
-      text_hash: textHash(post.text),
-      buffer_post_id: String(created.id),
-      due_at: created.dueAt || null
-    };
-    state.posts.push(record);
-    queued.push(record);
-    await writeState(statePath, state);
+    try {
+      const created = await createQueuedPost({
+        apiKey,
+        channelId: String(channel.id),
+        text: String(post.text),
+        fetchImpl
+      });
+      const record = {
+        type: String(post.type || "post"),
+        text_hash: textHash(post.text),
+        buffer_post_id: String(created.id),
+        due_at: created.dueAt || null
+      };
+      state.posts.push(record);
+      queued.push(record);
+      await writeState(statePath, state);
+    } catch (error) {
+      if (!isDuplicatePostError(error?.message)) throw error;
+      // Buffer confirms this exact post already occupies a nearby queue/post slot.
+      // Persist that fact locally so a retry does not repeatedly abort the day.
+      state.posts.push({
+        type: String(post.type || "post"),
+        text_hash: textHash(post.text),
+        buffer_post_id: null,
+        due_at: null,
+        duplicate_confirmed: true
+      });
+      await writeState(statePath, state);
+    }
   }
 
   return {
