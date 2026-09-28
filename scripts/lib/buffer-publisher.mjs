@@ -155,8 +155,7 @@ export async function publishSocialPosts({
   const date = tokyoDateKey(now);
   const target = postingTargetForDate(now);
   const candidates = (Array.isArray(posts) ? posts : [])
-    .filter(post => post?.ready !== false && cleanText(post?.text))
-    .slice(0, target);
+    .filter(post => post?.ready !== false && cleanText(post?.text));
 
   if (!candidates.length) {
     return { date, target, queued: [], skipped: 0, reason: "No ready social posts." };
@@ -174,23 +173,26 @@ export async function publishSocialPosts({
   }
 
   const completedHashes = new Set(state.posts.map(post => post?.text_hash).filter(Boolean));
-  const pending = candidates.filter(post => !completedHashes.has(textHash(post.text)));
-  const remainingSlots = Math.max(0, target - state.posts.length);
-  const toQueue = pending.slice(0, remainingSlots);
+  const duplicateHashes = new Set(Array.isArray(state.duplicate_hashes) ? state.duplicate_hashes : []);
+  const pending = candidates.filter(post => {
+    const hash = textHash(post.text);
+    return !completedHashes.has(hash) && !duplicateHashes.has(hash);
+  });
 
-  if (!toQueue.length) {
+  if (!pending.length) {
     return {
       date,
       target,
       queued: [],
       skipped: candidates.length,
-      reason: "Today's generated posts were already queued."
+      reason: "Today's generated posts were already queued or rejected as duplicates."
     };
   }
 
   const channel = await findTwitterChannel({ apiKey, channelName, fetchImpl });
   const queued = [];
-  for (const post of toQueue) {
+  for (const post of pending) {
+    if (state.posts.length >= target) break;
     try {
       const created = await createQueuedPost({
         apiKey,
@@ -209,15 +211,13 @@ export async function publishSocialPosts({
       await writeState(statePath, state);
     } catch (error) {
       if (!isDuplicatePostError(error?.message)) throw error;
-      // Buffer confirms this exact post already occupies a nearby queue/post slot.
-      // Persist that fact locally so a retry does not repeatedly abort the day.
-      state.posts.push({
-        type: String(post.type || "post"),
-        text_hash: textHash(post.text),
-        buffer_post_id: null,
-        due_at: null,
-        duplicate_confirmed: true
-      });
+      // A duplicate rejection means Buffer did not create a new post.
+      // Remember the rejected text so retries do not loop on it, but do not
+      // count it as a filled slot. Continue to the next distinct candidate.
+      state.duplicate_hashes = [...new Set([
+        ...(Array.isArray(state.duplicate_hashes) ? state.duplicate_hashes : []),
+        textHash(post.text)
+      ])];
       await writeState(statePath, state);
     }
   }
