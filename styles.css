@@ -173,3 +173,33 @@ footer{max-width:var(--max);margin:auto;padding:35px 22px 55px;border-top:1px so
   .category-product-card{grid-template-columns:100px 1fr}
   .category-product-visual{height:100px}
 }
+
+
+.guide-promo{background:#11141a;border:1px solid var(--line);border-radius:20px;padding:24px}
+.guide-promo .section-head{margin:0}
+.article-page{max-width:900px}
+.article-page h1,.article-index h1{font-size:clamp(34px,5vw,56px);line-height:1.15;letter-spacing:-.035em}
+.article-lead{font-size:17px;color:#d4d9e0!important}
+.article-updated,.article-note{color:var(--muted)!important;font-size:12px}
+.article-page section{margin-top:38px}
+.article-page section h2{font-size:28px;margin-bottom:12px}
+.article-table-wrap{max-height:none}
+.article-table{font-size:12px}
+.article-table th:first-child{width:48%}
+.article-tips{display:grid;gap:10px;padding-left:22px}
+.article-tips li{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.article-faq{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:var(--panel)}
+.article-faq summary{cursor:pointer;font-weight:800}
+.article-faq p{margin-bottom:0}
+.article-cta{margin-top:34px}
+.article-cta .primary{display:inline-block}
+.article-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:24px}
+.article-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.article-card h2{font-size:19px;line-height:1.45;margin:7px 0}
+.article-card h2 a{text-decoration:none}
+.article-card p{margin:0;color:var(--muted);font-size:13px}
+@media(max-width:720px){
+  .article-grid{grid-template-columns:1fr}
+  .article-page h1,.article-index h1{font-size:34px}
+  .article-table{min-width:640px}
+}
