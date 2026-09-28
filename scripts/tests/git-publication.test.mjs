@@ -72,7 +72,7 @@ test("real Git publication atomically sends products, SEO page and sitemap and r
   assert.equal(await git(config.remote, "rev-parse", "main"), head);
   assert.equal(await git(config.repositoryPath, "status", "--porcelain"), "");
   const changed = (await git(config.repositoryPath, "diff-tree", "--no-commit-id", "--name-only", "-r", head)).split(/\r?\n/).sort();
-  assert.deepEqual(changed, [
+  for (const expected of [
     "products.json",
     "products/12345678.html",
     "products/4901111784185.html",
@@ -82,13 +82,19 @@ test("real Git publication atomically sends products, SEO page and sitemap and r
     "categories/food.html",
     "categories/pet.html",
     "categories/daily.html",
+    "articles/index.html",
+    "articles/rakuten-yahoo-price-compare.html",
     "robots.txt",
     "sitemap.xml"
-  ].sort());
+  ]) {
+    assert.ok(changed.includes(expected), `missing published asset: ${expected}`);
+  }
+  assert.equal(changed.filter(path => path.startsWith("articles/")).length, 13);
   assert.equal(await readFile(join(config.repositoryPath, "products", "4901111784185.html"), "utf8").then(value => value.includes("参考商品")), true);
   await assert.rejects(access(join(config.repositoryPath, "products", "12345678.html")), { code: "ENOENT" });
   assert.match(await readFile(join(config.repositoryPath, "categories", "daily.html"), "utf8"), /日用品の価格比較/);
   assert.match(await readFile(join(config.repositoryPath, "robots.txt"), "utf8"), /Sitemap:/);
+  assert.match(await readFile(join(config.repositoryPath, "articles", "index.html"), "utf8"), /お買い物ガイド/);
   assert.match(await readFile(join(config.repositoryPath, "sitemap.xml"), "utf8"), /4901111784185/);
   assert.equal(JSON.parse(await readFile(config.historyPath, "utf8")).updated_at, "fixture");
 });

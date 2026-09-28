@@ -1,4 +1,5 @@
 import { validJAN, positiveNumber } from "./rakuten-comparison.mjs";
+import { articleTopicForDate } from "./article-pages.mjs";
 
 export const siteBaseURL = "https://no1-site.github.io/kyou-no-uriidashi/";
 
@@ -206,6 +207,33 @@ function currentRoundupPost(list, baseURL, dateLabel = "") {
   }, 28);
 }
 
+function articleTrafficPost(topic, baseURL, dateLabel = "") {
+  const url = trackedURL(new URL(`articles/${topic.slug}.html`, baseURL), "seo_article");
+  return fitXPost(titleLimit => [
+    `【PR】📚 ${dateLabel ? dateLabel + " " : ""}買い物ガイド`,
+    shorten(topic.title, titleLimit),
+    "",
+    "価格だけでなく、送料・容量・型番まで揃えて比較するポイントをまとめました👇",
+    url,
+    "#節約 #価格比較 #今日の売り出し"
+  ].join("\n"), 64, 20);
+}
+
+function tokyoWeekend(date) {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo", weekday: "short"
+  }).format(date);
+  return weekday === "Sat" || weekday === "Sun";
+}
+
+function arrangeDailyPosts(productPosts, articlePost, generatedDate) {
+  const product = Array.isArray(productPosts) ? productPosts.filter(Boolean) : [];
+  if (tokyoWeekend(generatedDate)) {
+    return [articlePost, ...product].slice(0, 3);
+  }
+  return [product[0], articlePost, ...product.slice(1)].filter(Boolean).slice(0, 3);
+}
+
 function codePointLength(value) {
   return [...String(value)].length;
 }
@@ -252,7 +280,15 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
       });
     }
 
-    for (const post of posts) {
+    const topic = articleTopicForDate(generatedDate);
+    const scheduledPosts = arrangeDailyPosts(posts, {
+      type: "article",
+      text: articleTrafficPost(topic, baseURL, dateLabel),
+      article: topic.slug,
+      products: []
+    }, generatedDate);
+
+    for (const post of scheduledPosts) {
       post.length = codePointLength(post.text);
       post.x_weighted_length = xWeightedLength(post.text);
       post.ready = post.x_weighted_length <= 280;
@@ -263,7 +299,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
       source: "products.json",
       candidate_count: current.length,
       history_ready: false,
-      posts
+      posts: scheduledPosts
     };
   }
   if (candidates.length >= 2) {
@@ -288,7 +324,15 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     });
   }
 
-  for (const post of posts) {
+  const topic = articleTopicForDate(generatedDate);
+  const scheduledPosts = arrangeDailyPosts(posts, {
+    type: "article",
+    text: articleTrafficPost(topic, baseURL, dateLabel),
+    article: topic.slug,
+    products: []
+  }, generatedDate);
+
+  for (const post of scheduledPosts) {
     post.length = codePointLength(post.text);
     post.x_weighted_length = xWeightedLength(post.text);
     post.ready = post.x_weighted_length <= 280;
@@ -299,6 +343,6 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     source: "products.json",
     candidate_count: candidates.length,
     history_ready: true,
-    posts
+    posts: scheduledPosts
   };
 }
