@@ -49,8 +49,14 @@ test("social generator creates safe site-link posts without claiming yesterday p
   assert.ok(result.posts.every(post => post.ready));
   assert.ok(result.posts.every(post => post.text.includes("no1-site.github.io/kyou-no-uriidashi")));
   assert.ok(result.posts.every(post => !post.text.includes("昨日")));
-  assert.match(result.posts[1].text, /過去の記録価格/);
-  assert.match(result.posts[1].text, /【PR】/);
+  const productPost = result.posts.find(post => post.type === "product");
+  const articlePost = result.posts.find(post => post.type === "article");
+  assert.ok(productPost);
+  assert.ok(articlePost);
+  assert.match(productPost.text, /過去の記録価格/);
+  assert.match(articlePost.text, /買い物ガイド/);
+  assert.match(articlePost.text, /utm_content=seo_article/);
+  assert.ok(result.posts.every(post => post.text.includes("【PR】")));
 });
 
 test("current comparison candidates do not require price history", () => {
@@ -74,7 +80,8 @@ test("social generator falls back to current-price posts when history is not rea
   assert.equal(result.posts[0].type, "current_roundup");
   assert.ok(result.posts.every(post => !post.text.includes("値下がり")));
   assert.ok(result.posts.every(post => post.text.includes("no1-site.github.io/kyou-no-uriidashi")));
-  assert.match(result.posts[1].text, /掲載価格/);
+  assert.ok(result.posts.some(post => post.type === "current_product" && /掲載価格/.test(post.text)));
+  assert.ok(result.posts.some(post => post.type === "article"));
 });
 
 
@@ -125,4 +132,16 @@ test("generated social posts include the Tokyo date so consecutive days are not 
   const result = buildSocialPosts(products, { generatedAt: "2026-09-26T02:00:00.000Z" });
   assert.ok(result.posts.every(post => post.text.includes("9/26")));
   assert.ok(result.posts.every(post => post.x_weighted_length <= 280));
+});
+
+
+test("weekday uses the middle X slot for an article and weekend puts the article first", () => {
+  const weekday = buildSocialPosts(products, { generatedAt: "2026-09-28T01:10:00.000Z" });
+  assert.equal(weekday.posts.length, 3);
+  assert.equal(weekday.posts[1].type, "article");
+
+  const weekend = buildSocialPosts(products, { generatedAt: "2026-09-27T01:10:00.000Z" });
+  assert.equal(weekend.posts.length, 3);
+  assert.equal(weekend.posts[0].type, "article");
+  assert.ok(weekend.posts.every(post => post.x_weighted_length <= 280));
 });
