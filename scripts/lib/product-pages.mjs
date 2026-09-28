@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { validJAN, httpsURL, positiveNumber } from "./rakuten-comparison.mjs";
+import { articlePaths, buildArticleSiteAssets } from "./article-pages.mjs";
 
 export const siteBaseURL = "https://no1-site.github.io/kyou-no-uriidashi/";
 const googleAnalyticsMeasurementID = "G-DM19L1646S";
@@ -379,6 +380,9 @@ export function renderSitemap(products, { baseURL = siteBaseURL } = {}) {
     if (!path) continue;
     entries.push({ loc: new URL(path, baseURL).href, lastmod: dateOnly(product.checked_at) });
   }
+  for (const path of articlePaths()) {
+    entries.push({ loc: new URL(path, baseURL).href, lastmod: "" });
+  }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.map(entry => `  <url>
@@ -400,6 +404,7 @@ export function buildProductSiteAssets(products, options = {}) {
   for (const category of categorySlugs.keys()) {
     assets.push({ path: categoryPagePath(category), content: renderCategoryPage(category, source, options) });
   }
+  assets.push(...buildArticleSiteAssets(source, options));
   assets.push({ path: "sitemap.xml", content: renderSitemap(source, options) });
   assets.push({ path: "robots.txt", content: renderRobots(options) });
   return assets;
