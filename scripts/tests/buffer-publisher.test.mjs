@@ -127,7 +127,7 @@ test("channel selection refuses ambiguity unless a name is configured", async ()
 });
 
 
-test("confirmed Buffer duplicate does not abort the rest of the queue", async () => {
+test("Buffer duplicate does not consume a slot and next distinct post is queued", async () => {
   const dir = await mkdtemp(join(tmpdir(), "buffer-duplicate-"));
   let createCount = 0;
   const fetchImpl = async (_url, options) => {
@@ -143,21 +143,23 @@ test("confirmed Buffer duplicate does not abort the rest of the queue", async ()
       if (createCount === 1) {
         return jsonResponse({ data: { createPost: { message: "Whoops, it looks like you've already got this one scheduled or posted around the same time. We're not able to post the same thing twice so close together." } } });
       }
-      return jsonResponse({ data: { createPost: { post: { id: "p2", text: body.variables.input.text, dueAt: "2026-09-26T10:00:00.000Z" } } } });
+      return jsonResponse({ data: { createPost: { post: { id: `p${createCount}`, text: body.variables.input.text, dueAt: "2026-09-26T10:00:00.000Z" } } } });
     }
     throw new Error("Unexpected Buffer request");
   };
 
+  const statePath = join(dir, "state.json");
   const result = await publishSocialPosts({
     apiKey: "secret",
     posts: samplePosts,
-    statePath: join(dir, "state.json"),
+    statePath,
     now: new Date("2026-09-26T01:10:00Z"),
     fetchImpl
   });
-  assert.equal(result.queued.length, 1);
-  assert.equal(createCount, 2);
-  const state = JSON.parse(await readFile(join(dir, "state.json"), "utf8"));
+  assert.equal(result.queued.length, 2);
+  assert.equal(createCount, 3);
+  const state = JSON.parse(await readFile(statePath, "utf8"));
   assert.equal(state.posts.length, 2);
-  assert.equal(state.posts[0].duplicate_confirmed, true);
+  assert.equal(state.duplicate_hashes.length, 1);
+  assert.ok(state.posts.every(post => post.buffer_post_id));
 });
