@@ -71,17 +71,21 @@ test("sitemap contains category pages and every valid product page with lastmod"
   assert.match(xml, /products\/4901111784185\.html/);
   assert.match(xml, /<lastmod>2026-09-21<\/lastmod>/);
   assert.equal((xml.match(/products\//g) || []).length, 1);
+  assert.match(xml, /articles\/index\.html/);
+  assert.match(xml, /articles\/laundry-detergent-cheap\.html/);
 });
 
 test("site asset builder emits product, six categories, sitemap and robots", () => {
   const assets = buildProductSiteAssets([product]);
   const paths = assets.map(asset => asset.path);
-  assert.equal(paths.length, 9);
+  assert.equal(paths.length, 22);
   assert.ok(paths.includes("products/4901111784185.html"));
   assert.ok(paths.includes("categories/food.html"));
   assert.ok(paths.includes("categories/kaden.html"));
   assert.ok(paths.includes("sitemap.xml"));
   assert.ok(paths.includes("robots.txt"));
+  assert.ok(paths.includes("articles/index.html"));
+  assert.ok(paths.includes("articles/rakuten-yahoo-price-compare.html"));
   assert.ok(assets.every(asset => typeof asset.content === "string" && asset.content.length > 20));
 });
 
@@ -93,4 +97,16 @@ test("generated product and category pages include ValueCommerce LinkSwitch", ()
   const categoryHTML = renderCategoryPage(product.category, [product]);
   assert.match(categoryHTML, /vc_pid = "892713174"/);
   assert.match(categoryHTML, /aml\.valuecommerce\.com\/vcdal\.js/);
+});
+
+
+test("SEO shopping guide assets contain useful current-data links and metadata", () => {
+  const assets = buildProductSiteAssets([product]);
+  const guide = assets.find(asset => asset.path === "articles/instant-coffee-cheap.html");
+  assert.ok(guide);
+  assert.match(guide.content, /インスタントコーヒーを安く買うには/);
+  assert.match(guide.content, /今日の比較データ/);
+  assert.match(guide.content, /products\/4901111784185\.html/);
+  assert.match(guide.content, /FAQPage/);
+  assert.match(guide.content, /vc_pid = "892713174"/);
 });
