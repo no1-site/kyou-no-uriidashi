@@ -146,3 +146,23 @@ test("weekday uses the middle X slot for an article and weekend puts the article
   assert.equal(weekend.posts[0].type, "article");
   assert.ok(weekend.posts.every(post => post.x_weighted_length <= 280));
 });
+
+
+test("single price-drop candidate still produces enough distinct social posts", () => {
+  const input = [
+    products[0],
+    {
+      ...products[1],
+      historical_price: null,
+      historical_discount_percent: null
+    }
+  ];
+  const result = buildSocialPosts(input, { generatedAt: "2026-10-01T01:10:00.000Z" });
+  assert.ok(result.posts.length >= 3);
+  assert.equal(result.posts[0].type, "product");
+  assert.equal(result.posts[1].type, "article");
+  assert.ok(result.posts.some(post => post.type === "current_fallback"));
+  const productJANs = result.posts.flatMap(post => post.products || []).filter(Boolean);
+  assert.ok(productJANs.includes("4901111784185"));
+  assert.ok(productJANs.includes("4902530908763"));
+});
