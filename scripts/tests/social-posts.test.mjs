@@ -44,7 +44,7 @@ test("social generator creates safe site-link posts without claiming yesterday p
   const result = buildSocialPosts(products, {
     generatedAt: "2026-09-22T04:00:00.000Z"
   });
-  assert.equal(result.posts.length, 3);
+  assert.equal(result.posts.length, 4);
   assert.equal(result.posts[0].type, "roundup");
   assert.ok(result.posts.every(post => post.ready));
   assert.ok(result.posts.every(post => post.text.includes("no1-site.github.io/kyou-no-uriidashi")));
@@ -76,7 +76,7 @@ test("social generator falls back to current-price posts when history is not rea
   }));
   const result = buildSocialPosts(input);
   assert.equal(result.history_ready, false);
-  assert.equal(result.posts.length, 3);
+  assert.equal(result.posts.length, 4);
   assert.equal(result.posts[0].type, "current_roundup");
   assert.ok(result.posts.every(post => !post.text.includes("値下がり")));
   assert.ok(result.posts.every(post => post.text.includes("no1-site.github.io/kyou-no-uriidashi")));
@@ -98,7 +98,7 @@ test("long Japanese product names are shortened to X's 280 weighted-character li
     name: longName + index
   }));
   const result = buildSocialPosts(input);
-  assert.equal(result.posts.length, 3);
+  assert.equal(result.posts.length, 4);
   assert.ok(result.posts.every(post => post.ready));
   assert.ok(result.posts.every(post => post.x_weighted_length <= 280));
 });
@@ -137,11 +137,12 @@ test("generated social posts include the Tokyo date so consecutive days are not 
 
 test("weekday uses the middle X slot for an article and weekend puts the article first", () => {
   const weekday = buildSocialPosts(products, { generatedAt: "2026-09-28T01:10:00.000Z" });
-  assert.equal(weekday.posts.length, 3);
+  assert.equal(weekday.posts.length, 4);
   assert.equal(weekday.posts[1].type, "article");
+  assert.equal(weekday.posts[3].type, "category");
 
   const weekend = buildSocialPosts(products, { generatedAt: "2026-09-27T01:10:00.000Z" });
-  assert.equal(weekend.posts.length, 3);
+  assert.equal(weekend.posts.length, 4);
   assert.equal(weekend.posts[0].type, "article");
   assert.ok(weekend.posts.every(post => post.x_weighted_length <= 280));
 });
