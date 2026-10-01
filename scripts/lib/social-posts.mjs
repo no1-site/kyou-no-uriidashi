@@ -228,10 +228,13 @@ function tokyoWeekend(date) {
 
 function arrangeDailyPosts(productPosts, articlePost, generatedDate) {
   const product = Array.isArray(productPosts) ? productPosts.filter(Boolean) : [];
+  // Keep extra candidates after the day's required slots. Buffer will queue only
+  // the number of remaining schedule slots, so later candidates act as backups
+  // when Buffer rejects one candidate as too similar to a recent post.
   if (tokyoWeekend(generatedDate)) {
-    return [articlePost, ...product].slice(0, 3);
+    return [articlePost, ...product];
   }
-  return [product[0], articlePost, ...product.slice(1)].filter(Boolean).slice(0, 3);
+  return [product[0], articlePost, ...product.slice(1)].filter(Boolean);
 }
 
 function codePointLength(value) {
