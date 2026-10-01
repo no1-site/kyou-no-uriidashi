@@ -76,6 +76,45 @@ function productURL(product, baseURL = siteBaseURL, content = "product") {
   return path ? trackedURL(new URL(path, baseURL), content) : "";
 }
 
+export function productFamilyKey(product) {
+  const generic = new Set(["送料無料", "新品", "正規品", "公式", "限定", "セット", "販売", "通販"]);
+  const normalized = cleanText(product?.name)
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\[\]【】()（）]/g, " ")
+    .replace(/\b[a-z]*\d+[a-z0-9-]*\b/gi, " ")
+    .replace(/\b\d+(?:\.\d+)?(?:ml|l|g|kg|cm|mm|個|本|枚|袋|台|色)?\b/gi, " ")
+    .replace(/[,:/・|_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const tokens = normalized.split(" ")
+    .filter(token => token.length >= 2 && !generic.has(token));
+  if (tokens.length) return tokens.slice(0, 3).join("|");
+  const jan = validJAN(product?.product_code);
+  return jan || normalized || "unknown";
+}
+
+function diversifyProducts(products, recentFamilies = [], date = new Date()) {
+  const recent = new Set((Array.isArray(recentFamilies) ? recentFamilies : []).filter(Boolean));
+  const unique = [];
+  const seenFamilies = new Set();
+  for (const product of Array.isArray(products) ? products : []) {
+    const family = productFamilyKey(product);
+    if (seenFamilies.has(family)) continue;
+    seenFamilies.add(family);
+    unique.push(product);
+  }
+
+  const fresh = unique.filter(product => !recent.has(productFamilyKey(product)));
+  const repeated = unique.filter(product => recent.has(productFamilyKey(product)));
+  const pool = fresh.length ? fresh : repeated;
+  if (!pool.length) return [];
+
+  const daySerial = Math.floor(date.getTime() / 86400000);
+  const offset = Math.abs(daySerial) % pool.length;
+  return [...pool.slice(offset), ...pool.slice(0, offset), ...repeated.filter(product => !pool.includes(product))];
+}
+
 function comparableOfferCount(product) {
   const offers = Array.isArray(product?.offers) ? product.offers : [];
   const shops = new Set();
@@ -241,16 +280,25 @@ function codePointLength(value) {
   return [...String(value)].length;
 }
 
-export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt = new Date().toISOString() } = {}) {
-  const candidates = priceDropCandidates(products);
-  const posts = [];
+export function buildSocialPosts(products, {
+  baseURL = siteBaseURL,
+  generatedAt = new Date().toISOString(),
+  recentFamilies = []
+} = {}) {
   const generatedDate = new Date(generatedAt);
+  const rawDrops = priceDropCandidates(products);
+  const diversifiedDrops = diversifyProducts(rawDrops, recentFamilies, generatedDate);
+  const diversifiedCurrent = diversifyProducts(currentComparisonCandidates(products), recentFamilies, generatedDate);
+  const hasFreshCurrent = diversifiedCurrent.some(product => !(new Set(recentFamilies)).has(productFamilyKey(product)));
+  const hasFreshDrop = rawDrops.some(product => !(new Set(recentFamilies)).has(productFamilyKey(product)));
+  const candidates = hasFreshDrop || !hasFreshCurrent ? diversifiedDrops : [];
+  const posts = [];
   const dateLabel = Number.isFinite(generatedDate.getTime())
     ? new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" }).format(generatedDate)
     : "";
 
   if (!candidates.length) {
-    const current = currentComparisonCandidates(products);
+    const current = diversifiedCurrent;
     if (!current.length) {
       return {
         generated_at: generatedAt,
@@ -302,7 +350,12 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
       source: "products.json",
       candidate_count: current.length,
       history_ready: false,
-      posts: scheduledPosts
+      posts: scheduledPosts,
+      selected_families: [...new Set(scheduledPosts.flatMap(post =>
+        (post.products || []).map(jan => products.find(product => validJAN(product.product_code) === jan))
+          .filter(Boolean)
+          .map(productFamilyKey)
+      ))]
     };
   }
   if (candidates.length >= 2) {
@@ -330,7 +383,7 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     // social slots from the broader current comparison set instead of leaving
     // the evening Buffer slot empty.
     const usedJANs = new Set(candidates.map(product => validJAN(product.product_code)).filter(Boolean));
-    const currentFallbacks = currentComparisonCandidates(products)
+    const currentFallbacks = diversifiedCurrent
       .filter(product => !usedJANs.has(validJAN(product.product_code)));
 
     for (const fallback of currentFallbacks.slice(0, 2)) {
@@ -361,6 +414,11 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
     source: "products.json",
     candidate_count: candidates.length,
     history_ready: true,
-    posts: scheduledPosts
+    posts: scheduledPosts,
+    selected_families: [...new Set(scheduledPosts.flatMap(post =>
+      (post.products || []).map(jan => products.find(product => validJAN(product.product_code) === jan))
+        .filter(Boolean)
+        .map(productFamilyKey)
+    ))]
   };
 }
