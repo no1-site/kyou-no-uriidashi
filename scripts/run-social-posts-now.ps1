@@ -4,6 +4,7 @@ $repositoryPath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $configDirectory = Join-Path $env:LOCALAPPDATA "KyouNoUriidashi"
 $bufferConfigPath = Join-Path $configDirectory "buffer-credentials.xml"
 $bufferStatePath = Join-Path $configDirectory "buffer-post-state.json"
+$socialRotationPath = Join-Path $configDirectory "social-rotation.json"
 
 function Reveal-SecureValue {
     param([Security.SecureString]$Value)
@@ -18,6 +19,7 @@ try {
     $bufferSettings = Import-Clixml -Path $bufferConfigPath
     $env:BUFFER_API_KEY = Reveal-SecureValue $bufferSettings.ApiKey
     $env:BUFFER_STATE_PATH = $bufferStatePath
+    $env:SOCIAL_ROTATION_PATH = $socialRotationPath
 
     & node (Join-Path $repositoryPath "scripts\generate-social-posts.mjs")
     if ($LASTEXITCODE -ne 0) {
@@ -36,4 +38,5 @@ finally {
     Remove-Item Env:BUFFER_API_KEY -ErrorAction SilentlyContinue
     Remove-Item Env:BUFFER_STATE_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:BUFFER_CHANNEL_NAME -ErrorAction SilentlyContinue
+    Remove-Item Env:SOCIAL_ROTATION_PATH -ErrorAction SilentlyContinue
 }
