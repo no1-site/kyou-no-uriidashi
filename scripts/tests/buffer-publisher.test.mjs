@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -162,4 +162,71 @@ test("Buffer duplicate does not consume a slot and next distinct post is queued"
   assert.equal(state.posts.length, 2);
   assert.equal(state.duplicate_hashes.length, 1);
   assert.ok(state.posts.every(post => post.buffer_post_id));
+});
+
+
+test("retry after the morning slot fills a missing evening slot", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buffer-late-retry-"));
+  const statePath = join(dir, "state.json");
+  await writeFile(statePath, JSON.stringify({
+    date: "2026-10-01",
+    posts: [
+      {
+        type: "post1",
+        text_hash: "already-posted-1",
+        buffer_post_id: "morning",
+        due_at: "2026-10-01T01:30:00.000Z"
+      },
+      {
+        type: "post2",
+        text_hash: "already-posted-2",
+        buffer_post_id: "noon",
+        due_at: "2026-10-01T03:00:00.000Z"
+      }
+    ]
+  }));
+
+  const candidates = [
+    ...samplePosts,
+    { type: "backup", text: "【PR】バックアップ価格投稿", ready: true }
+  ];
+  let created = 0;
+  const fetchImpl = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    if (body.query.includes("account { organizations")) {
+      return jsonResponse({ data: { account: { organizations: [{ id: "org1", name: "My organization" }] } } });
+    }
+    if (body.query.includes("channels(input:")) {
+      return jsonResponse({ data: { channels: [{ id: "x1", name: "uriidashi_ai0922", service: "twitter" }] } });
+    }
+    if (body.query.includes("mutation CreatePost")) {
+      created++;
+      return jsonResponse({
+        data: {
+          createPost: {
+            post: {
+              id: "evening",
+              text: body.variables.input.text,
+              dueAt: "2026-10-01T10:00:00.000Z"
+            }
+          }
+        }
+      });
+    }
+    throw new Error("Unexpected Buffer request");
+  };
+
+  const result = await publishSocialPosts({
+    apiKey: "secret",
+    posts: candidates,
+    statePath,
+    now: new Date("2026-10-01T01:57:00.000Z"),
+    fetchImpl
+  });
+
+  assert.equal(result.queued.length, 1);
+  assert.equal(created, 1);
+  const state = JSON.parse(await readFile(statePath, "utf8"));
+  assert.equal(state.posts.length, 3);
+  assert.equal(state.posts.at(-1).due_at, "2026-10-01T10:00:00.000Z");
 });
