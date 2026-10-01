@@ -11,7 +11,35 @@ const textPath = resolve(outputDirectory, "social-posts.txt");
 
 try {
   const products = JSON.parse(await readFile(productsPath, "utf8"));
-  const result = buildSocialPosts(products);
+  const rotationPath = process.env.SOCIAL_ROTATION_PATH || "";
+  let rotation = { days: [] };
+  if (rotationPath) {
+    try {
+      const parsed = JSON.parse(await readFile(rotationPath, "utf8"));
+      if (Array.isArray(parsed?.days)) rotation = parsed;
+    } catch {
+      // Missing/invalid rotation history starts fresh.
+    }
+  }
+
+  const dateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(new Date());
+  const dateValues = Object.fromEntries(dateParts.map(part => [part.type, part.value]));
+  const today = `${dateValues.year}-${dateValues.month}-${dateValues.day}`;
+  const recentFamilies = rotation.days
+    .filter(day => day?.date && day.date !== today)
+    .slice(-3)
+    .flatMap(day => Array.isArray(day?.families) ? day.families : []);
+
+  const result = buildSocialPosts(products, { recentFamilies });
+
+  if (rotationPath) {
+    const nextDays = rotation.days.filter(day => day?.date !== today);
+    nextDays.push({ date: today, families: result.selected_families || [] });
+    await mkdir(dirname(rotationPath), { recursive: true });
+    await writeFile(rotationPath, JSON.stringify({ days: nextDays.slice(-7) }, null, 2) + "\n", "utf8");
+  }
   await mkdir(outputDirectory, { recursive: true });
   await writeFile(jsonPath, JSON.stringify(result, null, 2) + "\n", "utf8");
   const text = result.posts.length
