@@ -54,6 +54,15 @@ async function writeState(path, state) {
   await writeFile(path, JSON.stringify(state, null, 2) + "\n", "utf8");
 }
 
+function futureQueuedCount(state, now) {
+  const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  return (Array.isArray(state?.posts) ? state.posts : []).filter(post => {
+    const dueMs = Date.parse(post?.due_at);
+    // Treat an unknown due time conservatively as still occupying a slot.
+    return Number.isFinite(dueMs) ? dueMs > nowMs : true;
+  }).length;
+}
+
 async function bufferGraphQL({ apiKey, query, variables, fetchImpl = fetch }) {
   const response = await fetchImpl(bufferEndpoint, {
     method: "POST",
@@ -162,7 +171,7 @@ export async function publishSocialPosts({
   }
 
   const state = await readState(statePath, date);
-  if (state.posts.length >= target) {
+  if (futureQueuedCount(state, now) >= target) {
     return {
       date,
       target,
@@ -192,7 +201,7 @@ export async function publishSocialPosts({
   const channel = await findTwitterChannel({ apiKey, channelName, fetchImpl });
   const queued = [];
   for (const post of pending) {
-    if (state.posts.length >= target) break;
+    if (futureQueuedCount(state, now) >= target) break;
     try {
       const created = await createQueuedPost({
         apiKey,
