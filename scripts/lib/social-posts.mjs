@@ -325,6 +325,21 @@ export function buildSocialPosts(products, { baseURL = siteBaseURL, generatedAt 
       text: categoryPost(alternate, baseURL, dateLabel),
       products: [validJAN(alternate.product_code)]
     });
+  } else {
+    // When only one product has usable price-drop history, fill the remaining
+    // social slots from the broader current comparison set instead of leaving
+    // the evening Buffer slot empty.
+    const usedJANs = new Set(candidates.map(product => validJAN(product.product_code)).filter(Boolean));
+    const currentFallbacks = currentComparisonCandidates(products)
+      .filter(product => !usedJANs.has(validJAN(product.product_code)));
+
+    for (const fallback of currentFallbacks.slice(0, 2)) {
+      posts.push({
+        type: "current_fallback",
+        text: currentProductPost(fallback, baseURL, "current_fallback", dateLabel),
+        products: [validJAN(fallback.product_code)]
+      });
+    }
   }
 
   const topic = articleTopicForDate(generatedDate);
