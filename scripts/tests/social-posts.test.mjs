@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSocialPosts, currentComparisonCandidates, priceDropCandidates, xWeightedLength } from "../lib/social-posts.mjs";
+import { buildSocialPosts, currentComparisonCandidates, priceDropCandidates, productFamilyKey, xWeightedLength } from "../lib/social-posts.mjs";
 
 const products = [
   {
@@ -165,4 +165,45 @@ test("single price-drop candidate still produces enough distinct social posts", 
   const productJANs = result.posts.flatMap(post => post.products || []).filter(Boolean);
   assert.ok(productJANs.includes("4901111784185"));
   assert.ok(productJANs.includes("4902530908763"));
+});
+
+
+test("recent product families are rotated out when other products are available", () => {
+  const moreProducts = [
+    ...products,
+    {
+      product_code: "4900000000001",
+      name: "TOSHIBA トルネオミニ サイクロン掃除機 VC-C7",
+      category: "家電",
+      price: 12000,
+      historical_price: 15000,
+      historical_discount_percent: 20,
+      offers: [
+        { shop_code: "e", price: 12000 },
+        { shop_code: "f", price: 12500 }
+      ]
+    },
+    {
+      product_code: "4900000000002",
+      name: "Panasonic 電気ケトル NC-KT1",
+      category: "家電",
+      price: 5000,
+      historical_price: 6000,
+      historical_discount_percent: 17,
+      offers: [
+        { shop_code: "g", price: 5000 },
+        { shop_code: "h", price: 5200 }
+      ]
+    }
+  ];
+  const torneo = moreProducts.find(product => product.name.includes("トルネオミニ"));
+  const torneoFamily = productFamilyKey(torneo);
+  const result = buildSocialPosts(moreProducts, {
+    generatedAt: "2026-10-02T01:10:00.000Z",
+    recentFamilies: [torneoFamily]
+  });
+  const selected = new Set(result.selected_families);
+  assert.equal(selected.has(torneoFamily), false);
+  assert.ok(result.posts.some(post => post.type === "article"));
+  assert.ok(result.posts.length >= 3);
 });
