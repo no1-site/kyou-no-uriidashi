@@ -171,7 +171,8 @@ export async function publishSocialPosts({
   }
 
   const state = await readState(statePath, date);
-  if (futureQueuedCount(state, now) >= target) {
+  let occupiedFutureSlots = futureQueuedCount(state, now);
+  if (occupiedFutureSlots >= target) {
     return {
       date,
       target,
@@ -201,7 +202,7 @@ export async function publishSocialPosts({
   const channel = await findTwitterChannel({ apiKey, channelName, fetchImpl });
   const queued = [];
   for (const post of pending) {
-    if (futureQueuedCount(state, now) >= target) break;
+    if (occupiedFutureSlots >= target) break;
     try {
       const created = await createQueuedPost({
         apiKey,
@@ -217,6 +218,7 @@ export async function publishSocialPosts({
       };
       state.posts.push(record);
       queued.push(record);
+      occupiedFutureSlots++;
       await writeState(statePath, state);
     } catch (error) {
       if (!isDuplicatePostError(error?.message)) throw error;
