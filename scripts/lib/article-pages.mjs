@@ -159,6 +159,11 @@ function formatPrice(value) {
   return price ? `¥${Math.round(price).toLocaleString("ja-JP")}` : "価格未確認";
 }
 
+function formatYenAmount(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? `¥${Math.round(number).toLocaleString("ja-JP")}` : "—";
+}
+
 function clean(value) {
   return String(value ?? "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -244,7 +249,7 @@ export function renderRakutenYahooDataArticle(products, { baseURL = "https://no1
     <th scope="row"><a href="../products/${escapeHTML(row.jan)}.html">${escapeHTML(row.name)}</a></th>
     <td>${escapeHTML(formatPrice(row.rakuten_price))}</td>
     <td>${escapeHTML(formatPrice(row.yahoo_price))}</td>
-    <td>${escapeHTML(formatPrice(row.gap_yen))}</td>
+    <td>${escapeHTML(formatYenAmount(row.gap_yen))}</td>
     <td>${row.winner === "rakuten" ? "楽天" : row.winner === "yahoo" ? "Yahoo!" : "同額"}</td>
   </tr>`).join("") || `<tr><td colspan="5">現在、楽天とYahooの両方で比較できる商品を再確認中です。</td></tr>`;
 
@@ -313,7 +318,7 @@ export function renderRakutenYahooDataArticle(products, { baseURL = "https://no1
         <div><span>Yahoo!が安い</span><strong>${data.yahoo_wins}</strong><small>商品</small></div>
         <div><span>同額</span><strong>${data.ties}</strong><small>商品</small></div>
       </div>
-      ${maxGap ? `<p class="market-highlight">最大の掲載価格差は <strong>${escapeHTML(formatPrice(maxGap.gap_yen))}</strong>。<a href="../products/${escapeHTML(maxGap.jan)}.html">${escapeHTML(maxGap.name)}</a> でした。</p>` : ""}
+      ${maxGap ? `<p class="market-highlight">最大の掲載価格差は <strong>${escapeHTML(formatYenAmount(maxGap.gap_yen))}</strong>。<a href="../products/${escapeHTML(maxGap.jan)}.html">${escapeHTML(maxGap.name)}</a> でした。</p>` : ""}
     </section>
 
     <section>
