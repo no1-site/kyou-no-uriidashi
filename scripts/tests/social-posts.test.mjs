@@ -74,7 +74,7 @@ test("social generator falls back to current-price posts when history is not rea
     historical_price: null,
     historical_discount_percent: null
   }));
-  const result = buildSocialPosts(input);
+  const result = buildSocialPosts(input, { generatedAt: "2026-10-16T01:10:00.000Z" });
   assert.equal(result.history_ready, false);
   assert.equal(result.posts.length, 4);
   assert.equal(result.posts[0].type, "current_roundup");
