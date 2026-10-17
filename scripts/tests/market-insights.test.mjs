@@ -23,7 +23,7 @@ const products = [
     ]
   },
   {
-    product_code: "4900000000001",
+    product_code: "4900000000009",
     name: "商品C",
     category: "家電",
     offers: [
@@ -32,7 +32,7 @@ const products = [
     ]
   },
   {
-    product_code: "4900000000002",
+    product_code: "4900000000016",
     name: "楽天だけの商品",
     category: "食品",
     offers: [
