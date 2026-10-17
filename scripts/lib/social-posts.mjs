@@ -1,5 +1,5 @@
 import { validJAN, positiveNumber } from "./rakuten-comparison.mjs";
-import { articleTopicForDate } from "./article-pages.mjs";
+import { buildRakutenYahooInsights } from "./market-insights.mjs";
 
 export const siteBaseURL = "https://no1-site.github.io/kyou-no-uriidashi/";
 
@@ -246,16 +246,32 @@ function currentRoundupPost(list, baseURL, dateLabel = "") {
   }, 28);
 }
 
-function articleTrafficPost(topic, baseURL, dateLabel = "") {
-  const url = trackedURL(new URL(`articles/${topic.slug}.html`, baseURL), "seo_article");
-  return fitXPost(titleLimit => [
-    `【PR】📚 ${dateLabel ? dateLabel + " " : ""}買い物ガイド`,
-    shorten(topic.title, titleLimit),
+function marketDataTrafficPost(products, baseURL, dateLabel = "") {
+  const insights = buildRakutenYahooInsights(products);
+  const data = insights.listed;
+  const url = trackedURL(new URL("articles/rakuten-yahoo-price-compare.html", baseURL), "market_data_article");
+  if (!data.comparable) {
+    return fitXPost(() => [
+      `【PR】📊 ${dateLabel ? dateLabel + " " : ""}楽天 vs Yahoo 実測`,
+      "同一商品の価格データを毎日比較しています。",
+      "",
+      "今日の集計はこちら👇",
+      url,
+      "#価格比較 #節約 #今日の売り出し"
+    ].join("\n"), 40, 20);
+  }
+
+  const maxGap = data.max_gap;
+  return fitXPost(nameLimit => [
+    `【PR】📊 ${dateLabel ? dateLabel + " " : ""}楽天 vs Yahoo 実測`,
+    `両方に掲載があった${data.comparable}商品を比較`,
+    `楽天が安い ${data.rakuten_wins} / Yahoo!が安い ${data.yahoo_wins} / 同額 ${data.ties}`,
+    ...(maxGap ? [`最大差 ${formatPrice(maxGap.gap_yen)}：${shorten(maxGap.name, nameLimit)}`] : []),
     "",
-    "価格だけでなく、送料・容量・型番まで揃えて比較するポイントをまとめました👇",
+    "今日の実測データ👇",
     url,
-    "#節約 #価格比較 #今日の売り出し"
-  ].join("\n"), 64, 20);
+    "#価格比較 #節約 #今日の売り出し"
+  ].join("\n"), 34, 8);
 }
 
 function tokyoWeekend(date) {
@@ -331,11 +347,10 @@ export function buildSocialPosts(products, {
       });
     }
 
-    const topic = articleTopicForDate(generatedDate);
     const scheduledPosts = arrangeDailyPosts(posts, {
       type: "article",
-      text: articleTrafficPost(topic, baseURL, dateLabel),
-      article: topic.slug,
+      text: marketDataTrafficPost(products, baseURL, dateLabel),
+      article: "rakuten-yahoo-price-compare",
       products: []
     }, generatedDate);
 
@@ -395,11 +410,10 @@ export function buildSocialPosts(products, {
     }
   }
 
-  const topic = articleTopicForDate(generatedDate);
   const scheduledPosts = arrangeDailyPosts(posts, {
     type: "article",
-    text: articleTrafficPost(topic, baseURL, dateLabel),
-    article: topic.slug,
+    text: marketDataTrafficPost(products, baseURL, dateLabel),
+    article: "rakuten-yahoo-price-compare",
     products: []
   }, generatedDate);
 

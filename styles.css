@@ -203,3 +203,19 @@ footer{max-width:var(--max);margin:auto;padding:35px 22px 55px;border-top:1px so
   .article-page h1,.article-index h1{font-size:34px}
   .article-table{min-width:640px}
 }
+
+
+.market-data-summary{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+.market-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.market-stat-grid div{background:#11141a;border:1px solid var(--line);border-radius:14px;padding:14px}
+.market-stat-grid span,.market-stat-grid strong,.market-stat-grid small{display:block}
+.market-stat-grid span{font-size:11px;color:var(--muted)}
+.market-stat-grid strong{font-size:30px;line-height:1.15;margin-top:5px}
+.market-stat-grid small{font-size:10px;color:var(--muted)}
+.market-highlight{margin:14px 0 0!important;padding:14px;border-radius:12px;background:#11141a}
+.market-data-table th:first-child{width:42%}
+.market-data-table th:not(:first-child){width:auto}
+@media(max-width:720px){
+  .market-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .market-data-table{min-width:720px}
+}

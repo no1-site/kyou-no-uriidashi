@@ -54,8 +54,8 @@ test("social generator creates safe site-link posts without claiming yesterday p
   assert.ok(productPost);
   assert.ok(articlePost);
   assert.match(productPost.text, /過去の記録価格/);
-  assert.match(articlePost.text, /買い物ガイド/);
-  assert.match(articlePost.text, /utm_content=seo_article/);
+  assert.match(articlePost.text, /楽天 vs Yahoo 実測/);
+  assert.match(articlePost.text, /utm_content=market_data_article/);
   assert.ok(result.posts.every(post => post.text.includes("【PR】")));
 });
 
@@ -74,7 +74,7 @@ test("social generator falls back to current-price posts when history is not rea
     historical_price: null,
     historical_discount_percent: null
   }));
-  const result = buildSocialPosts(input);
+  const result = buildSocialPosts(input, { generatedAt: "2026-10-16T01:10:00.000Z" });
   assert.equal(result.history_ready, false);
   assert.equal(result.posts.length, 4);
   assert.equal(result.posts[0].type, "current_roundup");
@@ -206,4 +206,33 @@ test("recent product families are rotated out when other products are available"
   assert.equal(selected.has(torneoFamily), false);
   assert.ok(result.posts.some(post => post.type === "article"));
   assert.ok(result.posts.length >= 3);
+});
+
+
+test("daily article post exposes actual Rakuten/Yahoo counts when both markets are available", () => {
+  const marketProducts = products.map((product, index) => ({
+    ...product,
+    offers: [
+      {
+        shop_code: `rakuten:${index}`,
+        marketplace_code: "rakuten",
+        price: index === 0 ? 800 : 1000,
+        postage: "included"
+      },
+      {
+        shop_code: `yahoo:${index}`,
+        marketplace_code: "yahoo",
+        price: index === 0 ? 900 : 900,
+        postage: "included"
+      }
+    ]
+  }));
+  const result = buildSocialPosts(marketProducts, { generatedAt: "2026-10-17T01:10:00.000Z" });
+  const articlePost = result.posts.find(post => post.type === "article");
+  assert.ok(articlePost);
+  assert.match(articlePost.text, /両方に掲載があった2商品を比較/);
+  assert.match(articlePost.text, /楽天が安い 1/);
+  assert.match(articlePost.text, /Yahoo!が安い 1/);
+  assert.match(articlePost.text, /utm_content=market_data_article/);
+  assert.ok(articlePost.x_weighted_length <= 280);
 });
