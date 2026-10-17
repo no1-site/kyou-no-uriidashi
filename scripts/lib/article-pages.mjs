@@ -1,11 +1,12 @@
 import { validJAN, positiveNumber, httpsURL } from "./rakuten-comparison.mjs";
+import { buildRakutenYahooInsights } from "./market-insights.mjs";
 
 export const articleTopics = [
   {
     slug: "rakuten-yahoo-price-compare",
     category: "",
-    title: "楽天市場とYahoo!ショッピング、どっちが安い？価格を比べるときの見方",
-    description: "楽天市場とYahoo!ショッピングを同一商品で比較するときに、商品価格・送料表示・ポイントやクーポンをどう見ればよいかを、今日の比較データと一緒に整理します。",
+    title: "楽天市場とYahoo!ショッピング、どっちが安い？実データで毎日比較",
+    description: "今日の売り出しが実際に取得した同一商品の掲載価格から、楽天市場とYahoo!ショッピングのどちらが安かった商品が多いかを毎日自動集計します。",
     keywords: ["楽天", "Yahoo"],
     tips: [
       "同じ商品かどうかをJANコードや型番で確認してから比較する。",
@@ -223,7 +224,150 @@ function updatedLabel(products) {
   return dates.length ? new Date(Math.max(...dates)).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }) : "";
 }
 
+export function renderRakutenYahooDataArticle(products, { baseURL = "https://no1-site.github.io/kyou-no-uriidashi/" } = {}) {
+  const insights = buildRakutenYahooInsights(products);
+  const data = insights.listed;
+  const shipping = insights.shipping_included;
+  const checked = updatedLabel(products);
+  const canonical = new URL("articles/rakuten-yahoo-price-compare.html", baseURL).href;
+  const headline = data.comparable
+    ? `楽天とYahoo、どっちが安い？今日の${data.comparable}商品を実測比較【毎日更新】`
+    : "楽天とYahoo、どっちが安い？実データで毎日比較";
+  const lead = data.comparable
+    ? `今日追跡している${insights.tracked_products}商品のうち、楽天市場とYahoo!ショッピングの両方に同一商品として掲載を確認できた${data.comparable}商品を比較しました。`
+    : "楽天市場とYahoo!ショッピングの両方で同一商品として確認できた商品を、毎日の取得データから比較します。";
+  const winnerText = data.comparable
+    ? `掲載価格ベースでは、楽天市場が安かった商品は${data.rakuten_wins}件、Yahoo!ショッピングが安かった商品は${data.yahoo_wins}件、同額は${data.ties}件でした。`
+    : "比較可能な商品データを収集中です。";
+
+  const rows = data.rows.slice(0, 12).map(row => `<tr>
+    <th scope="row"><a href="../products/${escapeHTML(row.jan)}.html">${escapeHTML(row.name)}</a></th>
+    <td>${escapeHTML(formatPrice(row.rakuten_price))}</td>
+    <td>${escapeHTML(formatPrice(row.yahoo_price))}</td>
+    <td>${escapeHTML(formatPrice(row.gap_yen))}</td>
+    <td>${row.winner === "rakuten" ? "楽天" : row.winner === "yahoo" ? "Yahoo!" : "同額"}</td>
+  </tr>`).join("") || `<tr><td colspan="5">現在、楽天とYahooの両方で比較できる商品を再確認中です。</td></tr>`;
+
+  const categoryRows = insights.categories.map(row => `<tr>
+    <th scope="row">${escapeHTML(row.category)}</th>
+    <td>${row.comparable}</td>
+    <td>${row.rakuten_wins}</td>
+    <td>${row.yahoo_wins}</td>
+    <td>${row.ties}</td>
+  </tr>`).join("") || `<tr><td colspan="5">カテゴリ別データを収集中です。</td></tr>`;
+
+  const maxGap = data.max_gap;
+  const shippingText = shipping.comparable
+    ? `送料込み表示の店舗が楽天・Yahooの両方にあった商品だけに絞ると${shipping.comparable}商品で、楽天${shipping.rakuten_wins}件、Yahoo!${shipping.yahoo_wins}件、同額${shipping.ties}件でした。`
+    : "送料込み表示を両モールで確認できる商品の集計は、十分な件数がそろい次第表示します。";
+
+  const articleJson = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    description: lead,
+    mainEntityOfPage: canonical,
+    dateModified: checked || undefined,
+    author: { "@type": "Organization", name: "今日の売り出しAI便" }
+  }).replace(/</g, "\\u003c");
+
+  return `<!doctype html>
+<html lang="ja">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DM19L1646S"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-DM19L1646S');</script>
+  <script type="text/javascript" language="javascript">var vc_pid = "892713174";</script>
+  <script type="text/javascript" src="//aml.valuecommerce.com/vcdal.js" async></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHTML(headline)}｜今日の売り出し</title>
+  <meta name="description" content="${escapeHTML(lead + winnerText)}">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="${escapeHTML(canonical)}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${escapeHTML(headline)}">
+  <meta property="og:description" content="${escapeHTML(winnerText)}">
+  <meta property="og:url" content="${escapeHTML(canonical)}">
+  <link rel="stylesheet" href="../styles.css?v=marketdata1">
+  <script type="application/ld+json">${articleJson}</script>
+</head>
+<body>
+  <div class="ad-disclosure">当サイトはアフィリエイト広告を利用しています。</div>
+  <header class="site-header">
+    <a class="brand" href="../"><span class="brand-mark">売</span><span><strong>今日の売り出し</strong><small>物価高の毎日に、賢い買い物を。</small></span></a>
+    <nav><a href="../#today">価格比較</a><a href="./index.html">お買い物ガイド</a><a href="../about.html">運営情報</a></nav>
+  </header>
+  <main class="page article-page market-data-page">
+    <nav class="breadcrumbs" aria-label="パンくず"><a href="../">トップ</a><span>›</span><a href="./index.html">お買い物ガイド</a><span>›</span><span>楽天 vs Yahoo 実測</span></nav>
+    <span class="eyebrow">ORIGINAL PRICE DATA</span>
+    <h1>${escapeHTML(headline)}</h1>
+    <p class="article-lead">${escapeHTML(lead)}</p>
+    ${checked ? `<p class="article-updated">価格データ更新：${escapeHTML(checked)}</p>` : ""}
+
+    <section class="market-data-summary">
+      <h2>今日の結論</h2>
+      <p><strong>${escapeHTML(winnerText)}</strong></p>
+      <div class="market-stat-grid">
+        <div><span>比較できた商品</span><strong>${data.comparable}</strong><small>商品</small></div>
+        <div><span>楽天が安い</span><strong>${data.rakuten_wins}</strong><small>商品</small></div>
+        <div><span>Yahoo!が安い</span><strong>${data.yahoo_wins}</strong><small>商品</small></div>
+        <div><span>同額</span><strong>${data.ties}</strong><small>商品</small></div>
+      </div>
+      ${maxGap ? `<p class="market-highlight">最大の掲載価格差は <strong>${escapeHTML(formatPrice(maxGap.gap_yen))}</strong>。<a href="../products/${escapeHTML(maxGap.jan)}.html">${escapeHTML(maxGap.name)}</a> でした。</p>` : ""}
+    </section>
+
+    <section>
+      <h2>価格差が大きかった商品</h2>
+      <div class="offer-table-wrap article-table-wrap">
+        <table class="offer-table article-table market-data-table">
+          <thead><tr><th scope="col">商品</th><th scope="col">楽天</th><th scope="col">Yahoo!</th><th scope="col">差額</th><th scope="col">安い方</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="article-note">各モールで確認できた同一商品の最も低い掲載価格を比較しています。送料・ポイント・クーポンはこの表の価格差には含めていません。</p>
+    </section>
+
+    <section>
+      <h2>カテゴリ別ではどちらが安かった？</h2>
+      <div class="offer-table-wrap article-table-wrap">
+        <table class="offer-table article-table market-data-table">
+          <thead><tr><th scope="col">カテゴリ</th><th scope="col">比較数</th><th scope="col">楽天</th><th scope="col">Yahoo!</th><th scope="col">同額</th></tr></thead>
+          <tbody>${categoryRows}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>送料込み条件でも確認</h2>
+      <p>${escapeHTML(shippingText)}</p>
+      <p class="article-note">「送料込み」は取得データ上で送料込みと確認できた店舗だけを対象にしています。配送先や購入条件で送料が変わる場合があります。</p>
+    </section>
+
+    <section>
+      <h2>この比較の方法</h2>
+      <ol class="article-tips">
+        <li>JANコードなどから同一商品と確認できた商品だけを対象にします。</li>
+        <li>楽天市場とYahoo!ショッピングの両方に掲載がある商品について、各モールで取得できた最も低い掲載価格を比較します。</li>
+        <li>ポイント・クーポンは利用条件が人によって異なるため含めません。送料も金額を正確に取得できない場合があるため、掲載価格の集計と送料込み確認を分けています。</li>
+      </ol>
+    </section>
+
+    <p class="article-cta"><a class="primary" href="../#today">今日の全商品を比較する</a></p>
+  </main>
+  <footer>
+    <div class="footer-brand">今日の売り出し</div>
+    <div class="footer-links"><a href="./index.html">お買い物ガイド</a><a href="../about.html">運営者情報</a><a href="../privacy.html">プライバシーポリシー</a></div>
+    <p>当サイトはアフィリエイト広告を利用しています。掲載価格・在庫・送料・ポイント等は変更される場合があります。</p>
+    <small>© 2026 今日の売り出し</small>
+  </footer>
+</body>
+</html>`;
+}
+
 export function renderArticlePage(topic, products, { baseURL = "https://no1-site.github.io/kyou-no-uriidashi/" } = {}) {
+  if (topic?.slug === "rakuten-yahoo-price-compare") {
+    return renderRakutenYahooDataArticle(products, { baseURL });
+  }
   const selected = topicProducts(topic, products);
   const canonical = new URL(articlePath(topic), baseURL).href;
   const checked = updatedLabel(selected.length ? selected : products);
