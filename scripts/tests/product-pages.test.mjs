@@ -110,3 +110,22 @@ test("SEO shopping guide assets contain useful current-data links and metadata",
   assert.match(guide.content, /FAQPage/);
   assert.match(guide.content, /vc_pid = "892713174"/);
 });
+
+
+test("Rakuten vs Yahoo data article renders actual counts and methodology", () => {
+  const twoMarketProduct = {
+    ...product,
+    offers: [
+      { shop_code: "rakuten:a", shop_name: "楽天A", marketplace_code: "rakuten", price: 980, url: "https://example.com/a", postage: "included", marketplace: "楽天市場" },
+      { shop_code: "yahoo:b", shop_name: "Yahoo B", marketplace_code: "yahoo", price: 1000, url: "https://example.com/b", postage: "included", marketplace: "Yahoo!ショッピング" }
+    ]
+  };
+  const assets = buildProductSiteAssets([twoMarketProduct]);
+  const guide = assets.find(asset => asset.path === "articles/rakuten-yahoo-price-compare.html");
+  assert.ok(guide);
+  assert.match(guide.content, /今日の1商品を実測比較/);
+  assert.match(guide.content, /楽天市場が安かった商品は1件/);
+  assert.match(guide.content, /Yahoo!ショッピングが安かった商品は0件/);
+  assert.match(guide.content, /ポイント・クーポン/);
+  assert.match(guide.content, /products\/4901111784185\.html/);
+});
